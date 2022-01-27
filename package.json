@@ -1,0 +1,85 @@
+{
+  "name": "sound-xyz",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": {
+    "packages": [
+      "protocol",
+      "common",
+      "bin-test"
+    ]
+  },
+  "scripts": {
+    "build": "turbo run build",
+    "build:protocol": "turbo run build --scope=\"*/protocol\" --no-deps",
+    "ci:release": "turbo run prepack && changeset publish && yarn install --mode=update-lockfile",
+    "ci:version": "changeset version",
+    "deploy:local": "yarn workspace @soundxyz/protocol deploy:local",
+    "deploy:rinkeby": "yarn workspace @soundxyz/protocol deploy:rinkeby",
+    "ngrok": "ngrok http 3000",
+    "prepare": "husky install",
+    "pull-env": "npx vercel env pull .env",
+    "sym-link": "node scripts/link-env.js",
+    "test": "turbo run test",
+    "test-and-build": "turbo run test-and-build",
+    "test:protocol": "yarn workspace @soundxyz/protocol test",
+    "typecheck": "tsc"
+  },
+  "lint-staged": {
+    "**/*": "prettier --write --ignore-unknown"
+  },
+  "devDependencies": {
+    "@changesets/cli": "^2.18.1",
+    "@synthetixio/synpress": "0.9.25-beta.11",
+    "@types/node": "^17.0.0",
+    "bob-ts": "^2.0.1",
+    "bob-tsm": "^0.3.8",
+    "concurrently": "^6.3.0",
+    "esbuild": "^0.14.5",
+    "execa": "^6.0.0",
+    "fs-extra": "^10.0.0",
+    "husky": "^7.0.2",
+    "lint-staged": "^11.1.2",
+    "open-terminal": "^0.1.11",
+    "prettier": "^2.4.1",
+    "start-server-and-test": "^1.14.0",
+    "ts-node": "^10.3.0",
+    "ts-node-dev": "^1.1.8",
+    "turbo": "^1.0.7",
+    "typescript": "^4.5.3"
+  },
+  "packageManager": "yarn@3.1.1",
+  "turbo": {
+    "pipeline": {
+      "generate": {},
+      "build": {
+        "dependsOn": [
+          "generate",
+          "^build"
+        ],
+        "outputs": [
+          "dist/**",
+          "artifacts/**",
+          "cache/**",
+          "generated/**",
+          "typechain/**"
+        ]
+      },
+      "test": {
+        "outputs": []
+      },
+      "prepack": {
+        "outputs": []
+      },
+      "dev": {
+        "cache": false
+      },
+      "test-and-build": {
+        "dependsOn": [
+          "test",
+          "build"
+        ]
+      }
+    }
+  }
+}
