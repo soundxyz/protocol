@@ -2,11 +2,6 @@
 
 We're enabling musicians to deploy a dedicated 721 that they control to mint editions of song NFTs.
 
-Open questions:
-
-- upgradeability patterns and implementation look reasonable?
-- any optimizations we should consider?
-
 ## ArtistCreator.sol
 
 Factory contract to deploy Artist.sol
