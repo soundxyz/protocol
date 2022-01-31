@@ -1,0 +1,4 @@
+packages:
+  - 'common'
+  - 'protocol'
+  - 'bin-test'

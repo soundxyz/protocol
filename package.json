@@ -2,27 +2,20 @@
   "name": "sound-xyz",
   "version": "0.1.0",
   "private": true,
-  "workspaces": {
-    "packages": [
-      "protocol",
-      "common",
-      "bin-test"
-    ]
-  },
   "scripts": {
     "build": "turbo run build",
     "build:protocol": "turbo run build --scope=\"*/protocol\" --no-deps",
-    "ci:release": "turbo run prepack && changeset publish && yarn install --mode=update-lockfile",
-    "ci:version": "changeset version",
-    "deploy:local": "yarn workspace @soundxyz/protocol deploy:local",
-    "deploy:rinkeby": "yarn workspace @soundxyz/protocol deploy:rinkeby",
+    "ci:release": "pnpm -r publish --access public --no-git-checks",
+    "ci:version": "changeset version && pnpm i --no-frozen-lockfile --lockfile-only --ignore-scripts",
+    "deploy:local": "pnpm -r --filter=@soundxyz/protocol deploy:local",
+    "deploy:rinkeby": "pnpm -r --filter=@soundxyz/protocol deploy:rinkeby",
     "ngrok": "ngrok http 3000",
     "prepare": "husky install",
     "pull-env": "npx vercel env pull .env",
     "sym-link": "node scripts/link-env.js",
     "test": "turbo run test",
     "test-and-build": "turbo run test-and-build",
-    "test:protocol": "yarn workspace @soundxyz/protocol test",
+    "test:protocol": "pnpm -r --filter=@soundxyz/protocol test",
     "typecheck": "tsc"
   },
   "lint-staged": {
@@ -48,7 +41,7 @@
     "turbo": "^1.0.7",
     "typescript": "^4.5.3"
   },
-  "packageManager": "yarn@3.1.1",
+  "packageManager": "pnpm@6.29.1",
   "turbo": {
     "pipeline": {
       "generate": {},
