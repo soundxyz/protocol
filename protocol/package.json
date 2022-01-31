@@ -7,19 +7,16 @@
     "protocol-hardhat": "./bin/hardhat.cjs"
   },
   "scripts": {
-    "build": "yarn build:hh",
+    "build": "pnpm build:hh",
     "build:hh": "hardhat compile --force",
     "clean": "rm -rf artifacts cache dist",
     "deploy-upgrade": "hardhat deploy-upgrade",
     "deploy:local": "hardhat node --show-accounts",
     "deploy:mainnet": "hardhat --network mainnet deploy",
     "deploy:rinkeby": "hardhat --network rinkeby deploy",
-    "postinstall": "yarn clean && yarn build",
     "prepack": "bob-tsm build.ts",
-    "seed:rinkeby": "DEPLOY_SEED_DATA=true yarn deploy:rinkeby",
+    "seed:rinkeby": "DEPLOY_SEED_DATA=true pnpm deploy:rinkeby",
     "test": "hardhat test",
-    "test-watcher": "bob-tsm --cjs scripts/test-watcher.ts",
-    "test-watcher:rinkeby": "NEXT_PUBLIC_VERCEL_ENV=preview yarn test-watcher",
     "transfer-ownership": "hardhat transfer-ownership",
     "upgrade-beacon": "hardhat upgrade-beacon",
     "verify": "hardhat verify-contract"
@@ -53,6 +50,7 @@
     "typechain": "^5.1.2"
   },
   "devDependencies": {
+    "@ethersproject/providers": "^5.5.3",
     "@types/chai": "^4.3.0",
     "@types/fs-extra": "^9.0.13",
     "@types/lodash": "^4.14.178",
@@ -65,7 +63,10 @@
     "typescript": "^4.5.4"
   },
   "publishConfig": {
-    "access": "restricted",
+    "access": "public",
     "directory": "dist"
+  },
+  "peerDependencies": {
+    "@ethersproject/providers": "^5.5.3"
   }
 }
