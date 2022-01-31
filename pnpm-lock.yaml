@@ -93,7 +93,9 @@ importers:
       '@openzeppelin/contracts': ^4.4.0
       '@openzeppelin/contracts-upgradeable': ^4.4.0
       '@openzeppelin/hardhat-upgrades': ^1.12.0
-      '@soundxyz/common': ^1.0.0
+      '@pnpm/exportable-manifest': ^2.2.4
+      '@pnpm/types': ^7.9.0
+      '@soundxyz/common': workspace:^1.0.0
       '@typechain/ethers-v5': ^7.1.0
       '@typechain/hardhat': ^2.3.0
       '@types/chai': ^4.3.0
@@ -130,7 +132,7 @@ importers:
       '@openzeppelin/contracts': 4.4.2
       '@openzeppelin/contracts-upgradeable': 4.4.2
       '@openzeppelin/hardhat-upgrades': 1.13.0_46c3ffff47883972a1e35207fcbef6af
-      '@soundxyz/common': 1.0.3
+      '@soundxyz/common': link:../common
       '@typechain/ethers-v5': 7.2.0_735b968b44a6c221b96116af13476280
       '@typechain/hardhat': 2.3.1_8bf6734c2567d3cb3114a02e15dff728
       '@types/mocha': 8.2.3
@@ -151,6 +153,8 @@ importers:
       typechain: 5.2.0_typescript@4.5.5
     devDependencies:
       '@ethersproject/providers': 5.5.3
+      '@pnpm/exportable-manifest': 2.2.4
+      '@pnpm/types': 7.9.0
       '@types/chai': 4.3.0
       '@types/fs-extra': 9.0.13
       '@types/lodash': 4.14.178
@@ -2281,6 +2285,61 @@ packages:
       - supports-color
     dev: false
 
+  /@pnpm/error/2.0.0:
+    resolution: {integrity: sha512-mgj4h0LWGpDPZwsEH75VFQhr2Njut3PcaCQatERIoO3zmKGqCsLfla9cWYH9+zn0fcwnKhnJ+FBzoiY2LhnCtw==}
+    engines: {node: '>=12.17'}
+    dev: true
+
+  /@pnpm/exportable-manifest/2.2.4:
+    resolution: {integrity: sha512-efQERSg8GjA5A9zqX5XTaLbNrIJGA6t7d5X+4BrMUWw4apfxZpokb4GDKBcvZtKLNDiwdZWJMoTud5KO/LREaA==}
+    engines: {node: '>=12.17'}
+    dependencies:
+      '@pnpm/error': 2.0.0
+      '@pnpm/read-project-manifest': 2.0.11
+      '@pnpm/types': 7.9.0
+      ramda: 0.27.2
+    dev: true
+
+  /@pnpm/graceful-fs/1.0.0:
+    resolution: {integrity: sha512-bb+NcVgVBjm81skP73c0i4o2NUxiBt0d30KLXHJ05EejQ/qbxQMsi/gZxsi8MKbzCky2DzykQYkzm2tl3XajAQ==}
+    engines: {node: '>=12.17'}
+    dependencies:
+      graceful-fs: 4.2.9
+    dev: true
+
+  /@pnpm/read-project-manifest/2.0.11:
+    resolution: {integrity: sha512-S99jUoKVsorRIZr1n8o/HMr2qeC9H0g11AmQrojnO0WOv4lTgHvGz88vm69Ik08b4UqUCeZgKAdvj8HcZXrF7w==}
+    engines: {node: '>=12.17'}
+    dependencies:
+      '@pnpm/error': 2.0.0
+      '@pnpm/graceful-fs': 1.0.0
+      '@pnpm/types': 7.9.0
+      '@pnpm/write-project-manifest': 2.0.10
+      detect-indent: 6.1.0
+      fast-deep-equal: 3.1.3
+      is-windows: 1.0.2
+      json5: 2.2.0
+      parse-json: 5.2.0
+      read-yaml-file: 2.1.0
+      sort-keys: 4.2.0
+      strip-bom: 4.0.0
+    dev: true
+
+  /@pnpm/types/7.9.0:
+    resolution: {integrity: sha512-WJol7zZKMktP8bvoFEh/ANCrYsIDcfpGFgRZmAMeULuskFVND4NLXXIkBqNhtmv+ipt6mVUnsZTGHrVaXrlsNA==}
+    engines: {node: '>=12.17'}
+    dev: true
+
+  /@pnpm/write-project-manifest/2.0.10:
+    resolution: {integrity: sha512-39fH8i9BY84OuJhovKnC05DZiOEa3gnwhLpt/Gk2RhcD2CDj76NWjKqauyHeAYihpjDWJB92xuLR3gk9qTyzEQ==}
+    engines: {node: '>=12.17'}
+    dependencies:
+      '@pnpm/types': 7.9.0
+      json5: 2.2.0
+      write-file-atomic: 3.0.3
+      write-yaml-file: 4.2.0
+    dev: true
+
   /@portis/web3-provider-engine/1.1.2:
     resolution: {integrity: sha512-NiiF0UPfngf4ulo32ybEDAMaad4i7h44HJaN8ea8HHt/vaFiUcPtINjC2o21jhWaLANerW4ZbOrNs1iCLH4p6A==}
     dependencies:
@@ -2474,20 +2533,6 @@ packages:
     resolution: {integrity: sha512-cX0JJRcmPtNUJpzD2K7FdA7qQsTOk1UZnFx2k7qAg9ZRvuaH5NBe5IEdBMXGlmf2+FmjhqbygJ26H8l2SV7aKQ==}
     dependencies:
       antlr4ts: 0.5.0-alpha.4
-    dev: false
-
-  /@soundxyz/common/1.0.3:
-    resolution: {integrity: sha512-x1D9qlEB8HBz3l5d5gM7CxKgKZYydCpI8L8p+4wUkxFLGL9JsowaAsAIWNMp51NGBBYXLPZp+7WMjeVkuszGtQ==}
-    dependencies:
-      '@ethersproject/wallet': 5.5.0
-      ethers: 5.5.4
-      faker: 5.5.3
-      nodemon: 2.0.15
-      slugify: 1.6.5
-      uuid: 8.3.2
-    transitivePeerDependencies:
-      - bufferutil
-      - utf-8-validate
     dev: false
 
   /@synthetixio/js/2.41.0:
@@ -3646,6 +3691,10 @@ packages:
     resolution: {integrity: sha512-o5Roy6tNG4SL/FOkCAN6RzjiakZS25RLYFrcMttJqbdd8BWrnA+fGz57iN5Pb06pvBGvl5gQ0B48dJlslXvoTg==}
     dependencies:
       sprintf-js: 1.0.3
+
+  /argparse/2.0.1:
+    resolution: {integrity: sha512-8+9WqebbFzpX9OR+Wa6O29asIogeRMzcGtAINdpMHHyAg10f05aSFVBbcEqGf/PXw1EjAZ+q2/bEBg3DvurK3Q==}
+    dev: true
 
   /aria-query/4.2.2:
     resolution: {integrity: sha512-o/HelwhuKpTj/frsOsbNLNgnNGVIFsVP/SW2BSF14gVl7kAfMOJ6/8wUAUvG1R1NHKrfG+2sHZTu0yauT1qBrA==}
@@ -9844,6 +9893,11 @@ packages:
     resolution: {integrity: sha1-caUMhCnfync8kqOQpKA7OfzVHT4=}
     engines: {node: '>=0.10.0'}
 
+  /is-plain-obj/2.1.0:
+    resolution: {integrity: sha512-YWnfyRwxL/+SsrWYfOpUtz5b3YD+nyfkHvjbcanzk8zgyO4ASD67uVMRt8k5bM4lLMDnXfriRhOpemw+NfT1eA==}
+    engines: {node: '>=8'}
+    dev: true
+
   /is-plain-object/2.0.4:
     resolution: {integrity: sha512-h5PpgXkWitc38BBMYawTYMWJHFZJVnBquFE57xFpjB8pJFiF6gZ+bU+WyI/yqXiFR5mdLsgYNaPe8uao6Uv9Og==}
     engines: {node: '>=0.10.0'}
@@ -10101,6 +10155,13 @@ packages:
     dependencies:
       argparse: 1.0.10
       esprima: 4.0.1
+
+  /js-yaml/4.1.0:
+    resolution: {integrity: sha512-wpxZs9NoxZaJESJGIZTyDEaYpl0FKSA+FB9aJiyemKhMwkxQg63h4T1KJgUGHpTqPDNRcmmYLugrRjJlBtWvRA==}
+    hasBin: true
+    dependencies:
+      argparse: 2.0.1
+    dev: true
 
   /jsbn/0.1.1:
     resolution: {integrity: sha1-peZUwuWi3rXyAdls77yoDA7y9RM=}
@@ -12978,6 +13039,14 @@ packages:
       strip-bom: 3.0.0
     dev: true
 
+  /read-yaml-file/2.1.0:
+    resolution: {integrity: sha512-UkRNRIwnhG+y7hpqnycCL/xbTk7+ia9VuVTC0S+zVbwd65DI9eUpRMfsWIGrCWxTU/mi+JW8cHQCrv+zfCbEPQ==}
+    engines: {node: '>=10.13'}
+    dependencies:
+      js-yaml: 4.1.0
+      strip-bom: 4.0.0
+    dev: true
+
   /readable-stream/1.0.34:
     resolution: {integrity: sha1-Elgg40vIQtLyqq+v5MKRbuMsFXw=}
     dependencies:
@@ -13971,6 +14040,13 @@ packages:
     engines: {node: '>=0.10.0'}
     dependencies:
       is-plain-obj: 1.1.0
+    dev: true
+
+  /sort-keys/4.2.0:
+    resolution: {integrity: sha512-aUYIEU/UviqPgc8mHR6IW1EGxkAXpeRETYcrzg8cLAvUPZcpAlleSXHV2mY7G12GphSH6Gzv+4MMVSSkbdteHg==}
+    engines: {node: '>=8'}
+    dependencies:
+      is-plain-obj: 2.1.0
     dev: true
 
   /source-list-map/2.0.1:
@@ -16516,6 +16592,14 @@ packages:
       is-typedarray: 1.0.0
       signal-exit: 3.0.6
       typedarray-to-buffer: 3.1.5
+
+  /write-yaml-file/4.2.0:
+    resolution: {integrity: sha512-LwyucHy0uhWqbrOkh9cBluZBeNVxzHjDaE9mwepZG3n3ZlbM4v3ndrFw51zW/NXYFFqP+QWZ72ihtLWTh05e4Q==}
+    engines: {node: '>=10.13'}
+    dependencies:
+      js-yaml: 4.1.0
+      write-file-atomic: 3.0.3
+    dev: true
 
   /write/1.0.3:
     resolution: {integrity: sha512-/lg70HAjtkUgWPVZhZcm+T4hkL8Zbtp1nFNOn3lRrxnlv50SRBv7cR7RqR+GMsd3hUXy9hWBo4CHTbFTcOYwig==}

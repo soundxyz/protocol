@@ -1,5 +1,5 @@
 ---
-'@soundxyz/protocol': minor
+'@soundxyz/protocol': patch
 ---
 
 Fix release

@@ -1,9 +1,13 @@
+import makePublishManifestPkg from '@pnpm/exportable-manifest';
+import type { ProjectManifest } from '@pnpm/types';
 import { buildCode } from 'bob-ts';
 import { execaCommand } from 'execa';
 import { copy, ensureDir } from 'fs-extra';
 import { readFile, rm, writeFile } from 'fs/promises';
 import { extname } from 'path';
 import pkg from './package.json';
+
+const makePublishManifest = getDefault(makePublishManifestPkg);
 
 async function main() {
   await rm('dist', {
@@ -45,7 +49,7 @@ async function main() {
     writeFile(
       'dist/package.json',
       JSON.stringify(
-        {
+        await makePublishManifest('.', {
           name: pkg.name,
           version: pkg.version,
           main: 'src/index.js',
@@ -53,7 +57,7 @@ async function main() {
           dependencies: pkg.dependencies,
           license: pkg.license,
           bin: pkg.bin,
-        },
+        } as ProjectManifest),
         null,
         2
       )
@@ -79,3 +83,7 @@ main().catch((err) => {
   console.error(err);
   process.exit(1);
 });
+
+function getDefault<T>(v: T | { default?: T }) {
+  return (('default' in v ? v.default : v) || v) as T;
+}
