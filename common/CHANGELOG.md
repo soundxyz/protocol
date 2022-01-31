@@ -1,5 +1,11 @@
 # @soundxyz/common
 
+## 1.0.3
+
+### Patch Changes
+
+- 7748c1a: Fix release
+
 ## 1.0.2
 
 ### Patch Changes
