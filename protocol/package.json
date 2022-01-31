@@ -50,6 +50,7 @@
     "typechain": "^5.1.2"
   },
   "devDependencies": {
+    "@ethersproject/providers": "^5.5.3",
     "@types/chai": "^4.3.0",
     "@types/fs-extra": "^9.0.13",
     "@types/lodash": "^4.14.178",
@@ -64,5 +65,8 @@
   "publishConfig": {
     "access": "public",
     "directory": "dist"
+  },
+  "peerDependencies": {
+    "@ethersproject/providers": "^5.5.3"
   }
 }

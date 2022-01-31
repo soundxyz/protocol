@@ -15,6 +15,7 @@
     "uuid": "^8.3.2"
   },
   "devDependencies": {
+    "@ethersproject/providers": "^5.5.3",
     "@types/faker": "5.5.9",
     "@types/node": "^17.0.0",
     "@types/nodemon": "^1.19.1",
@@ -27,5 +28,8 @@
   "publishConfig": {
     "access": "public",
     "directory": "dist"
+  },
+  "peerDependencies": {
+    "@ethersproject/providers": "^5.5.3"
   }
 }
