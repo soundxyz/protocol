@@ -36,6 +36,7 @@ async function main() {
           main: 'index.js',
           dependencies: pkg.dependencies,
           license: pkg.license,
+          repository: pkg.repository,
         },
         null,
         2,

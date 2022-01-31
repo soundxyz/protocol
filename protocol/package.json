@@ -1,6 +1,10 @@
 {
   "name": "@soundxyz/protocol",
   "version": "1.2.2",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/soundxyz/protocol-public"
+  },
   "license": "UNLICENSED",
   "main": "src/index.ts",
   "bin": {
@@ -15,6 +19,7 @@
     "deploy:mainnet": "hardhat --network mainnet deploy",
     "deploy:rinkeby": "hardhat --network rinkeby deploy",
     "prepack": "bob-tsm build.ts",
+    "postpublish": "gh-release",
     "seed:rinkeby": "DEPLOY_SEED_DATA=true pnpm deploy:rinkeby",
     "test": "hardhat test",
     "transfer-ownership": "hardhat transfer-ownership",
@@ -64,11 +69,11 @@
     "prettier": "^2.5.1",
     "typescript": "^4.5.4"
   },
+  "peerDependencies": {
+    "@ethersproject/providers": "^5.5.3"
+  },
   "publishConfig": {
     "access": "public",
     "directory": "dist"
-  },
-  "peerDependencies": {
-    "@ethersproject/providers": "^5.5.3"
   }
 }

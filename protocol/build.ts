@@ -57,6 +57,7 @@ async function main() {
           dependencies: pkg.dependencies,
           license: pkg.license,
           bin: pkg.bin,
+          repository: pkg.repository,
         } as ProjectManifest),
         null,
         2
