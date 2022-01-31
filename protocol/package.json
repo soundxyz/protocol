@@ -18,7 +18,7 @@
     "deploy:local": "hardhat node --show-accounts",
     "deploy:mainnet": "hardhat --network mainnet deploy",
     "deploy:rinkeby": "hardhat --network rinkeby deploy",
-    "prepack": "bob-tsm build.ts",
+    "prepack": "pnpm -w build && bob-tsm build.ts",
     "postpublish": "gh-release",
     "seed:rinkeby": "DEPLOY_SEED_DATA=true pnpm deploy:rinkeby",
     "test": "hardhat test",
