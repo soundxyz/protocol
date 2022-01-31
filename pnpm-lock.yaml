@@ -97,7 +97,7 @@ importers:
       '@openzeppelin/hardhat-upgrades': ^1.12.0
       '@pnpm/exportable-manifest': ^2.2.4
       '@pnpm/types': ^7.9.0
-      '@soundxyz/common': workspace:^1.0.0
+      '@soundxyz/common': workspace:^1.0.3
       '@typechain/ethers-v5': ^7.1.0
       '@typechain/hardhat': ^2.3.0
       '@types/chai': ^4.3.0
@@ -4041,7 +4041,7 @@ packages:
   /axios/0.21.4_debug@4.3.3:
     resolution: {integrity: sha512-ut5vewkiu8jjGBdqpM44XxjuCjq9LAKeHVmoVfHVzy8eHgxxq8SbAVQNovDA8mVi05kP0Ea/n/UzcSHcTJQfNg==}
     dependencies:
-      follow-redirects: 1.14.7_debug@4.3.3
+      follow-redirects: 1.14.7
     transitivePeerDependencies:
       - debug
     dev: false
@@ -8643,18 +8643,6 @@ packages:
     dependencies:
       debug: 4.3.2
     dev: true
-
-  /follow-redirects/1.14.7_debug@4.3.3:
-    resolution: {integrity: sha512-+hbxoLbFMbRKDwohX8GkTataGqO6Jb7jGwpAlwgy2bIz25XtRm7KEzJM76R1WiNT5SwZkX4Y75SwBolkpmE7iQ==}
-    engines: {node: '>=4.0'}
-    peerDependencies:
-      debug: '*'
-    peerDependenciesMeta:
-      debug:
-        optional: true
-    dependencies:
-      debug: 4.3.3
-    dev: false
 
   /follow-redirects/1.5.10:
     resolution: {integrity: sha512-0V5l4Cizzvqt5D44aTXbFZz+FtyXV1vrDN6qrelxtfYQKW0KO0W2T/hkE8xvGa/540LkZlkaUjO4ailYTFtHVQ==}
