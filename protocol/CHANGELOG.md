@@ -1,5 +1,13 @@
 # @soundxyz/protocol
 
+## 1.2.3
+
+### Patch Changes
+
+- f673af1: Fix release
+- Updated dependencies [7748c1a]
+  - @soundxyz/common@1.0.3
+
 ## 1.0.5
 
 ### Patch Changes
