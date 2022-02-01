@@ -1,5 +1,13 @@
 # @soundxyz/protocol
 
+## 1.3.1
+
+### Patch Changes
+
+- 1c57d7f: Set license as GPLv3
+- Updated dependencies [1c57d7f]
+  - @soundxyz/common@1.0.5
+
 ## 1.3.0
 
 ### Minor Changes

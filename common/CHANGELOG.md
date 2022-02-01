@@ -1,5 +1,11 @@
 # @soundxyz/common
 
+## 1.0.5
+
+### Patch Changes
+
+- 1c57d7f: Set license as GPLv3
+
 ## 1.0.4
 
 ### Patch Changes
