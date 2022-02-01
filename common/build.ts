@@ -1,6 +1,6 @@
 import { buildCode } from 'bob-ts';
 import { execaCommand } from 'execa';
-import { mkdir, rm, writeFile } from 'fs/promises';
+import { mkdir, rm, writeFile, copyFile } from 'fs/promises';
 import pkg from './package.json';
 
 async function main() {
@@ -27,6 +27,7 @@ async function main() {
         exports: 'named',
       },
     }),
+    copyFile('../LICENSE', 'dist/LICENSE'),
     writeFile(
       'dist/package.json',
       JSON.stringify(

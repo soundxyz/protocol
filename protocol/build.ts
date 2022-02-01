@@ -39,6 +39,7 @@ async function main() {
     copy('src/artifacts', 'dist/src/artifacts'),
     copy('src/deployments', 'dist/src/deployments'),
     copy('contracts', 'dist/contracts'),
+    copy('../LICENSE', 'dist/LICENSE'),
     copy('typechain', 'dist/typechain', {
       filter(file) {
         if (extname(file) === '') return true;
