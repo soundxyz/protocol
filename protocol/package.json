@@ -27,6 +27,9 @@
     "verify": "hardhat verify-contract"
   },
   "dependencies": {
+    "@ethersproject/abi": "^5.0.0",
+    "@ethersproject/bytes": "^5.0.0",
+    "@ethersproject/hardware-wallets": "^5.0.14",
     "@nomiclabs/hardhat-ethers": "npm:hardhat-deploy-ethers@0.3.0-beta.11",
     "@nomiclabs/hardhat-etherscan": "^2.1.6",
     "@nomiclabs/hardhat-solhint": "^2.0.0",
@@ -34,6 +37,7 @@
     "@openzeppelin/contracts": "^4.4.0",
     "@openzeppelin/contracts-upgradeable": "^4.4.0",
     "@openzeppelin/hardhat-upgrades": "^1.12.0",
+    "@rari-capital/solmate": "^6.2.0",
     "@soundxyz/common": "workspace:^1.0.3",
     "@typechain/ethers-v5": "^7.1.0",
     "@typechain/hardhat": "^2.3.0",

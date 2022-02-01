@@ -13,9 +13,7 @@
     "prepare": "husky install",
     "pull-env": "npx vercel env pull .env",
     "sym-link": "node scripts/link-env.js",
-    "test": "turbo run test",
-    "test-and-build": "turbo run test-and-build",
-    "test:protocol": "pnpm -r --filter=@soundxyz/protocol test",
+    "test": "pnpm -r --filter=@soundxyz/protocol test",
     "typecheck": "tsc"
   },
   "lint-staged": {
@@ -23,7 +21,6 @@
   },
   "devDependencies": {
     "@changesets/cli": "^2.18.1",
-    "@synthetixio/synpress": "0.9.25-beta.11",
     "@types/node": "^17.0.0",
     "bob-ts": "^2.0.1",
     "bob-tsm": "^0.3.8",
