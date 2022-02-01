@@ -1,5 +1,11 @@
 # @soundxyz/protocol
 
+## 1.3.0
+
+### Minor Changes
+
+- fdc49ff: Adds 0xSplits contracts
+
 ## 1.2.3
 
 ### Patch Changes
