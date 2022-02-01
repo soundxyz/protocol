@@ -5140,6 +5140,7 @@ packages:
         optional: true
     dependencies:
       debug: 4.3.2
+    dev: true
 
   /follow-redirects/1.14.7_debug@4.3.3:
     resolution: {integrity: sha512-+hbxoLbFMbRKDwohX8GkTataGqO6Jb7jGwpAlwgy2bIz25XtRm7KEzJM76R1WiNT5SwZkX4Y75SwBolkpmE7iQ==}
@@ -9609,7 +9610,7 @@ packages:
     dependencies:
       command-exists: 1.2.9
       commander: 3.0.2
-      follow-redirects: 1.14.7_debug@4.3.2
+      follow-redirects: 1.14.7_debug@4.3.3
       fs-extra: 0.30.0
       js-sha3: 0.8.0
       memorystream: 0.3.1
