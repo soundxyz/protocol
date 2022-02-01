@@ -5,7 +5,7 @@
     "type": "git",
     "url": "https://github.com/soundxyz/protocol-public"
   },
-  "license": "UNLICENSED",
+  "license": "GPLv3",
   "main": "src/index.ts",
   "bin": {
     "protocol-hardhat": "./bin/hardhat.cjs"
