@@ -1,5 +1,11 @@
 # @soundxyz/common
 
+## 1.1.0
+
+### Minor Changes
+
+- 6a7f07b: Adds creditSplit seed data & contract
+
 ## 1.0.5
 
 ### Patch Changes
