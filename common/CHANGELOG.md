@@ -1,5 +1,11 @@
 # @soundxyz/common
 
+## 1.2.0
+
+### Minor Changes
+
+- bd50a7c: Adds displayName to seed users
+
 ## 1.1.0
 
 ### Minor Changes
