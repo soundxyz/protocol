@@ -15,7 +15,7 @@
     "build:hh": "hardhat compile --force",
     "clean": "rm -rf artifacts cache dist",
     "deploy-upgrade": "hardhat deploy-upgrade",
-    "deploy:local": "hardhat node --show-accounts",
+    "deploy:local": "hardhat node",
     "deploy:mainnet": "hardhat --network mainnet deploy",
     "deploy:rinkeby": "hardhat --network rinkeby deploy",
     "prepack": "pnpm -w build && bob-tsm build.ts",

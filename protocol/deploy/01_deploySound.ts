@@ -164,17 +164,17 @@ const func: DeployFunction = async function ({ ethers, deployments, network, run
     }
 
     // Verify everything on etherscan (wait 30 sec for etherscan to process it first)
-    console.log('\nWaiting for etherscan to index the bytecode...');
-    await new Promise((res) => setTimeout(res, 30_000));
+    // console.log('\nWaiting for etherscan to index the bytecode...');
+    // await new Promise((res) => setTimeout(res, 30_000));
 
-    for (const contract of contracts) {
-      // verify implementation
-      console.log('Verifying implementation:', contract.implementation);
-      await verifyContract(contract.implementation);
-      // verify proxy
-      console.log('Verifying proxy:', contract.proxy);
-      await verifyContract(contract.proxy, contract.args, contract.contractPath);
-    }
+    // for (const contract of contracts) {
+    //   // verify implementation
+    //   console.log('Verifying implementation:', contract.implementation);
+    //   await verifyContract(contract.implementation);
+    //   // verify proxy
+    //   console.log('Verifying proxy:', contract.proxy);
+    //   await verifyContract(contract.proxy, contract.args, contract.contractPath);
+    // }
   }
 
   async function verifyContract(address: string, constructorArguments: any[] = [], contractPath?: string) {

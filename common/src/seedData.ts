@@ -296,6 +296,34 @@ export const releaseData: ReleaseDatum[] = releaseIds.map((releaseId, idx) => {
   return data;
 });
 
+export const creditSplits = [
+  {
+    splitAddress: '0xb28Ad73ebCE83861105B4354bB8F241040533026',
+    allocations: [
+      {
+        ownerAddress: usersData[0].publicAddress.toLowerCase(),
+        percent: 60,
+        role: 'ARTIST',
+      },
+      {
+        ownerAddress: usersData[1].publicAddress.toLowerCase(),
+        percent: 20,
+        role: 'PRODUCER',
+      },
+      {
+        ownerAddress: usersData[2].publicAddress.toLowerCase(),
+        percent: 15,
+        role: 'MANAGER',
+      },
+      {
+        ownerAddress: usersData[3].publicAddress.toLowerCase(),
+        percent: 5,
+        role: 'ARTWORK_ARTIST',
+      },
+    ],
+  },
+];
+
 export const normalizedPeakData = [
   28, 60, 91, 83, 84, 65, 50, 44, 57, 40, 49, 31, 54, 46, 40, 49, 40, 39, 32, 47, 39, 37, 40, 39,
   42, 34, 48, 55, 37, 46, 47, 57, 44, 57, 51, 53, 58, 53, 61, 70, 81, 66, 66, 67, 42, 54, 57, 43,
