@@ -30,11 +30,8 @@
     "fs-extra": "^10.0.0",
     "husky": "^7.0.2",
     "lint-staged": "^12.3.3",
-    "open-terminal": "^0.1.11",
     "prettier": "^2.4.1",
-    "start-server-and-test": "^1.14.0",
-    "ts-node": "^10.3.0",
-    "ts-node-dev": "^1.1.8",
+    "ts-node": "^10.4.0",
     "turbo": "^1.0.7",
     "typescript": "^4.5.3"
   },

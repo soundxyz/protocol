@@ -18,10 +18,8 @@
     "uuid": "^8.3.2"
   },
   "devDependencies": {
-    "nodemon": "^2.0.13",
     "@ethersproject/providers": "^5.5.3",
     "@types/node": "^17.0.15",
-    "@types/nodemon": "^1.19.1",
     "@types/uuid": "^8.3.3",
     "bob-ts": "^3.0.2",
     "bob-tsm": "^0.4.6",
