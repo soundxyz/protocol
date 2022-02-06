@@ -1,5 +1,6 @@
-import { Provider } from '@ethersproject/providers';
 import { Wallet } from '@ethersproject/wallet';
+
+import type { Provider } from '@ethersproject/providers';
 
 type CreateArtistWhiteListArgs = {
   chainId: number;
