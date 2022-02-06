@@ -1,7 +1,7 @@
 import '@nomiclabs/hardhat-ethers';
 
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/dist/src/signers';
-import { helpers } from '@soundxyz/common-v2test';
+import { helpers } from '@soundxyz/common';
 import { expect } from 'chai';
 import { BigNumber, Contract } from 'ethers';
 import { ethers, waffle } from 'hardhat';
