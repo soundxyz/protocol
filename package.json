@@ -2,10 +2,17 @@
   "name": "sound-xyz",
   "version": "0.1.0",
   "private": true,
+  "workspaces": {
+    "packages": [
+      "protocol",
+      "common",
+      "bin-test"
+    ]
+  },
   "scripts": {
     "build": "turbo run build",
     "build:protocol": "turbo run build --scope=\"*/protocol\" --no-deps",
-    "ci:release": "pnpm -r publish --access public --no-git-checks",
+    "ci:release": "turbo run prepack && changeset publish --access public --no-git-checks && pnpm i --no-frozen-lockfile --lockfile-only --ignore-scripts",
     "ci:version": "changeset version && pnpm i --no-frozen-lockfile --lockfile-only --ignore-scripts",
     "deploy:local": "pnpm -r --filter=@soundxyz/protocol deploy:local",
     "deploy:rinkeby": "pnpm -r --filter=@soundxyz/protocol deploy:rinkeby",
@@ -13,8 +20,7 @@
     "prepare": "husky install",
     "pull-env": "npx vercel env pull .env",
     "sym-link": "node scripts/link-env.js",
-    "test": "pnpm -r --filter=@soundxyz/protocol test",
-    "typecheck": "tsc"
+    "test": "pnpm -r --filter=@soundxyz/protocol test"
   },
   "lint-staged": {
     "**/*": "prettier --write --ignore-unknown"

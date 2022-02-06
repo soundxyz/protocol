@@ -1,7 +1,10 @@
 import { constants, helpers } from '@soundxyz/common';
+import * as dotenv from 'dotenv';
 import { ethers } from 'ethers';
 import { DeployFunction } from 'hardhat-deploy/types';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
+
+dotenv.config();
 
 type ContractConfig = {
   implementation?: string;
@@ -115,7 +118,7 @@ const func: DeployFunction = async function ({ ethers, deployments, network, run
 
   // To verify on etherscan, we need the implemention address, proxy address, and arguments to the proxy contructor
   // only allow rinkeby -- switch to mainnet manually when needed
-  if (chainId !== 1337) {
+  if (chainId !== 1337 && process.env.VERIFY_ETHERSCAN) {
     const contracts: ContractConfig[] = [];
 
     const creatorImpAddress = artistCreatorImp.address;
@@ -164,17 +167,17 @@ const func: DeployFunction = async function ({ ethers, deployments, network, run
     }
 
     // Verify everything on etherscan (wait 30 sec for etherscan to process it first)
-    // console.log('\nWaiting for etherscan to index the bytecode...');
-    // await new Promise((res) => setTimeout(res, 30_000));
+    console.log('\nWaiting for etherscan to index the bytecode...');
+    await new Promise((res) => setTimeout(res, 30_000));
 
-    // for (const contract of contracts) {
-    //   // verify implementation
-    //   console.log('Verifying implementation:', contract.implementation);
-    //   await verifyContract(contract.implementation);
-    //   // verify proxy
-    //   console.log('Verifying proxy:', contract.proxy);
-    //   await verifyContract(contract.proxy, contract.args, contract.contractPath);
-    // }
+    for (const contract of contracts) {
+      // verify implementation
+      console.log('Verifying implementation:', contract.implementation);
+      await verifyContract(contract.implementation);
+      // verify proxy
+      console.log('Verifying proxy:', contract.proxy);
+      await verifyContract(contract.proxy, contract.args, contract.contractPath);
+    }
   }
 
   async function verifyContract(address: string, constructorArguments: any[] = [], contractPath?: string) {
