@@ -4,11 +4,11 @@
 
 ### Major Changes
 
-- 9fe323f: @soundxyz/common-v2test
+- 9fe323f: @soundxyz/common
 
   - adds getPresaleSignature helper function
 
-  @soundxyz/protocol-v2test
+  @soundxyz/protocol
 
   - adds natspec comments to contracts
   - fixes royaltyInfo bug
