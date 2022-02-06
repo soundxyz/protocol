@@ -1,5 +1,13 @@
 # @soundxyz/protocol
 
+## 2.0.1
+
+### Patch Changes
+
+- cedeba8: Remove unused dependencies
+- Updated dependencies [cedeba8]
+  - @soundxyz/common@1.3.1
+
 ## 2.0.0
 
 ### Major Changes
