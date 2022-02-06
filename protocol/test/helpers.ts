@@ -12,6 +12,9 @@ export const EXAMPLE_ARTIST_NAME = 'Alpha & Omega';
 export const EXAMPLE_ARTIST_ID = 1;
 export const EXAMPLE_ARTIST_SYMBOL = 'AOMEGA';
 export const BASE_URI = `https://sound-staging.vercel.app/api/metadata/`;
+export const EMPTY_SIGNATURE =
+  '0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000';
+export const INVALID_PRIVATE_KEY = '0xb73249a6bf495f81385ce91b84cc2eff129011fea429ba7f1827d73b06390208';
 
 //========= Helpers ==========//
 
@@ -36,7 +39,11 @@ export async function createArtist(
 }
 
 export const currentSeconds = () => Math.floor(Date.now() / 1000);
-export const getRandomInt = (max?: number) => Math.floor(Math.random() * (max || MAX_UINT32));
+export const getRandomInt = (min = 0, max = MAX_UINT32) => {
+  min = Math.ceil(min);
+  max = Math.floor(max);
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+};
 export const getRandomBN = (max?: number) => {
   const rando = BigNumber.from(ethers.utils.randomBytes(4));
   if (max) {
@@ -45,8 +52,8 @@ export const getRandomBN = (max?: number) => {
   return rando;
 };
 
-export const deployArtistBeacon = async (soundOwner: SignerWithAddress) => {
-  const Artist = await ethers.getContractFactory('Artist');
+export const deployArtistImplementation = async (soundOwner: SignerWithAddress) => {
+  const Artist = await ethers.getContractFactory('ArtistV2');
 
   const protoArtist = await Artist.deploy();
   await protoArtist.deployed();

@@ -1,4 +1,5 @@
 import './tasks/deploy-upgrade';
+import './tasks/get-beacon';
 import './tasks/nft-transfer';
 import './tasks/set-admin';
 import './tasks/transfer-ownership';
@@ -14,7 +15,7 @@ import 'hardhat-deploy';
 import 'hardhat-gas-reporter';
 
 import * as dotenv from 'dotenv';
-import { HardhatUserConfig, task } from 'hardhat/config';
+import { HardhatUserConfig } from 'hardhat/config';
 
 dotenv.config();
 
@@ -68,20 +69,5 @@ const config: HardhatUserConfig = {
     artifacts: 'src/artifacts',
   },
 };
-
-task('ad-hoc', async (args, hardhat) => {
-  const { ethers, deployments } = hardhat;
-  const [soundDeployer] = await ethers.getSigners();
-
-  const artistCreatorDeployment = await deployments.get('ArtistCreator');
-  const artistCreator = await ethers.getContractAt('ArtistCreator', artistCreatorDeployment.address);
-  const beaconAddress = await artistCreator.beaconAddress();
-  console.log({ beaconAddress });
-  const beaconContract = await ethers.getContractAt('UpgradeableBeacon', beaconAddress, soundDeployer);
-  const implementationAddress = await beaconContract.implementation();
-  console.log({ implementationAddress });
-  const beaconOwner = await beaconContract.owner();
-  console.log({ beaconOwner });
-});
 
 export default config;
