@@ -1,5 +1,25 @@
 # @soundxyz/common
 
+## 1.3.0
+
+### Minor Changes
+
+- 9fe323f: @soundxyz/common-v2test
+
+  - adds getPresaleSignature helper function
+
+  @soundxyz/protocol-v2test
+
+  - adds natspec comments to contracts
+  - fixes royaltyInfo bug
+  - adds events to setStartTime and setEndTime
+  - implements presale whitelisting via signatures in Artist.sol:
+    - adds presaleQuantity & signerAddress to Edition struct
+    - adds PRESALE_TYPEHASH constant to storage
+    - adds getSigner function
+    - makes changes to buyEdition for whitelisting functionality
+    - makes changes & additions to tests
+
 ## 1.2.0
 
 ### Minor Changes
