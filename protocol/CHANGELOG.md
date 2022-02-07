@@ -1,5 +1,11 @@
 # @soundxyz/protocol
 
+## 2.0.2
+
+### Patch Changes
+
+- 311eda9: Fixes local seed script so Artist gets upgraded to ArtistV2
+
 ## 2.0.1
 
 ### Patch Changes
