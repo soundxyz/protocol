@@ -11,6 +11,7 @@ const { NETWORK_MAP, baseURIs } = constants;
 
 const func: DeployFunction = async function ({ ethers, waffle, deployments }: HardhatRuntimeEnvironment) {
   const signers = await ethers.getSigners();
+  const deployer = signers[0];
   const chainId = (await waffle.provider.getNetwork()).chainId;
   const networkName = NETWORK_MAP[chainId];
 
@@ -24,9 +25,35 @@ const func: DeployFunction = async function ({ ethers, waffle, deployments }: Ha
     editions: {},
   };
   const artistCreatorDeployment = await deployments.get('ArtistCreator');
-  const artistCreator = new Contract(artistCreatorDeployment.address, artistCreatorDeployment.abi, signers[0]);
+  const artistCreator = new Contract(artistCreatorDeployment.address, artistCreatorDeployment.abi, deployer);
 
-  // Deploy artist contracts
+  //============= Upgrade to latest version of Artist.sol (only for local dev)==================//
+
+  console.log('Starting upgrade to V2');
+
+  // Deploy new implemntation
+  const ArtistFactory = await ethers.getContractFactory(`ArtistV2`);
+  const artistUpgrade = await ArtistFactory.deploy();
+  console.log('Deployment started:', artistUpgrade.deployTransaction.hash);
+  const deployReceipt = await artistUpgrade.deployTransaction.wait();
+  const newImplAddress = deployReceipt.contractAddress;
+
+  const beaconAddress = await artistCreator.beaconAddress();
+  console.log({ beaconAddress });
+
+  const beacon = await ethers.getContractAt('UpgradeableBeacon', beaconAddress, deployer);
+  const tx = await beacon.upgradeTo(newImplAddress);
+  await tx.wait();
+
+  const expectedImplementation = await beacon.implementation();
+  if (expectedImplementation !== newImplAddress) {
+    throw new Error(`The Artist implementation was not upgraded to ${newImplAddress}`);
+  } else {
+    console.log(`Artist implementation upgraded to ${newImplAddress}`);
+  }
+
+  //==========  Deploy artist contracts ======================//
+
   const artists = [];
   for (let i = 0; i < artistsData.length; i++) {
     const artistDatum = artistsData[i];
@@ -59,14 +86,22 @@ const func: DeployFunction = async function ({ ethers, waffle, deployments }: Ha
     addresses.dummyArtists = { ...addresses.dummyArtists, [artistDatum.soundHandle]: contractAddress };
   }
 
-  const artistDeployment = await deployments.getArtifact('ArtistV2');
+  const artistArtifact = await deployments.getArtifact('ArtistV2');
+  const beaconContract = await ethers.getContractAt('UpgradeableBeacon', beaconAddress, deployer);
+  const implementationAddress = await beaconContract.implementation();
+  console.log({ implementationAddress });
+  const beaconOwner = await beaconContract.owner();
+  console.log({ beaconOwner });
 
-  // Mint NFT editions
+  //=============== Mint NFT editions ======================//
+
   for (const [index, releaseDatum] of Object.entries(releaseData)) {
     const artistIdx = Number(index) % artists.length;
-    const artistDatum = artists[artistIdx];
+    const { name, contractAddress } = artists[artistIdx];
     const currentSigner = signers[artistIdx];
-    const artistContract = new Contract(artistDatum.contractAddress, artistDeployment.abi, currentSigner);
+    const artistContract = new Contract(contractAddress, artistArtifact.abi, currentSigner);
+
+    console.log({ name, contractAddress });
 
     // TODO: when testing with presale, this may need to be changed
     const presaleQuantity = 0;
@@ -88,10 +123,10 @@ const func: DeployFunction = async function ({ ethers, waffle, deployments }: Ha
 
     const receipt = await tx.wait();
     if (receipt.status != 1) {
-      throw new Error(`Failed to create edition for ${artistDatum.name}`);
+      throw new Error(`Failed to create edition for ${name}`);
     }
 
-    console.log(`Created edition for ${artistDatum.name}. releaseId: ${releaseId} txHash: ${tx.hash}`);
+    console.log(`Created edition for ${name}. releaseId: ${releaseId} txHash: ${tx.hash}`);
     addresses.editions = { ...addresses.editions, [releaseDatum.titleSlug]: releaseId };
 
     // Move block.timestamp forward 10 seconds to avoid startTime conflicts
