@@ -5,7 +5,7 @@ import { HardhatRuntimeEnvironment } from 'hardhat/types';
 
 const { getAuthSignature } = helpers;
 
-const { artistsData, releaseData } = seedData;
+const { artistsData, releaseData, usersData } = seedData;
 
 const { NETWORK_MAP, baseURIs } = constants;
 
@@ -59,7 +59,7 @@ const func: DeployFunction = async function ({ ethers, waffle, deployments }: Ha
     addresses.dummyArtists = { ...addresses.dummyArtists, [artistDatum.soundHandle]: contractAddress };
   }
 
-  const artistDeployment = await deployments.getArtifact('Artist');
+  const artistDeployment = await deployments.getArtifact('ArtistV2');
 
   // Mint NFT editions
   for (const [index, releaseDatum] of Object.entries(releaseData)) {
@@ -68,7 +68,12 @@ const func: DeployFunction = async function ({ ethers, waffle, deployments }: Ha
     const currentSigner = signers[artistIdx];
     const artistContract = new Contract(artistDatum.contractAddress, artistDeployment.abi, currentSigner);
 
+    // TODO: when testing with presale, this may need to be changed
+    const presaleQuantity = 0;
+    const signerAddress = usersData[0].publicAddress;
+
     const { price, quantity, royaltyBPS, startTime, endTime, releaseId } = releaseDatum;
+
     const tx = await artistContract.createEdition(
       currentSigner.address,
       price,
@@ -76,8 +81,15 @@ const func: DeployFunction = async function ({ ethers, waffle, deployments }: Ha
       royaltyBPS,
       startTime,
       endTime,
+      presaleQuantity,
+      signerAddress,
       { gasLimit: 200_000 }
     );
+
+    const receipt = await tx.wait();
+    if (receipt.status != 1) {
+      throw new Error(`Failed to create edition for ${artistDatum.name}`);
+    }
 
     console.log(`Created edition for ${artistDatum.name}. releaseId: ${releaseId} txHash: ${tx.hash}`);
     addresses.editions = { ...addresses.editions, [releaseDatum.titleSlug]: releaseId };
