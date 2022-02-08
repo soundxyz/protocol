@@ -22,7 +22,7 @@ dotenv.config();
 const config: HardhatUserConfig = {
   defaultNetwork: 'hardhat',
   solidity: {
-    version: '0.8.7',
+    compilers: [{ version: '0.8.0' }, { version: '0.8.2' }, { version: '0.8.4' }, { version: '0.8.7' }],
     settings: {
       // todo: turn on optimizer only when deploying to testnet or prod
       optimizer: {
