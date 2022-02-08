@@ -1,5 +1,11 @@
 # @soundxyz/protocol
 
+## 3.0.0
+
+### Major Changes
+
+- 3b4df3c: New 0xSplits function names
+
 ## 2.0.2
 
 ### Patch Changes
