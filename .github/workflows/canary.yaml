@@ -40,9 +40,6 @@ jobs:
         run: npm i pnpm@latest -g
 
       - name: Install Dependencies
-        env:
-          NEXT_PUBLIC_ALCHEMY_KEY: ${{ secrets.NEXT_PUBLIC_ALCHEMY_KEY }}
-          MNEMONIC: ${{ secrets.MNEMONIC }}
         run: pnpm i
 
       - name: Release Canary
