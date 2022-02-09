@@ -1,5 +1,17 @@
 # @soundxyz/common
 
+## 2.0.0-alpha-977c7de.0
+
+### Major Changes
+
+- d07bae9: ## @soundxyz/common
+
+  Adds more creditSplits seed data
+
+  ## @soundxyz/protocol
+
+  Removes gasLimit from ArtistCreator deploy script (was causing local out-of-gas bug)
+
 ## 1.3.1
 
 ### Patch Changes
