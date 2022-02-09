@@ -133,6 +133,18 @@ const func: DeployFunction = async function ({ ethers, waffle, deployments }: Ha
     // Move block.timestamp forward 10 seconds to avoid startTime conflicts
     await waffle.provider.send('evm_increaseTime', [10]);
     await waffle.provider.send('evm_mine', []);
+
+    const { editionId } = artistContract.interface.parseLog(receipt.events[0]).args;
+
+    console.log({ editionId, releaseId });
+
+    // Buy the edition
+    const buyer = signers[(+index + 1) % signers.length];
+    const buyTx = await artistContract.connect(buyer).buyEdition(editionId, signerAddress, { value: price });
+
+    console.log(`Bought edition for ${name}. txHash: ${buyTx.hash}`);
+
+    await buyTx.wait();
   }
 
   //=============== Splits ======================//
