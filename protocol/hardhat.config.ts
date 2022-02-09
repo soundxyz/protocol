@@ -55,14 +55,10 @@ const config: HardhatUserConfig = {
         mnemonic: process.env.MNEMONIC,
       },
     },
-    mainnet: {
-      url: `https://eth-mainnet.alchemyapi.io/v2/${process.env.NEXT_PUBLIC_ALCHEMY_KEY}`,
-      accounts: [process.env.ADMIN_PRIVATE_KEY!],
-    },
-  },
-  etherscan: {
-    /// TODO: set up sound.xyz etherscan account (the key below is from Matt's account)
-    apiKey: '9YPP1TCA4DN9TIU7F9MV3N3VBVFR8428KI',
+    // mainnet: {
+    //   url: `https://eth-mainnet.alchemyapi.io/v2/${process.env.NEXT_PUBLIC_ALCHEMY_KEY}`,
+    //   accounts: [process.env.ADMIN_PRIVATE_KEY!],
+    // },
   },
   paths: {
     deployments: 'src/deployments',

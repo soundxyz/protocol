@@ -306,27 +306,62 @@ export const releaseData: ReleaseDatum[] = releaseIds.map((releaseId, idx) => {
 
 export const creditSplits = [
   {
-    splitAddress: '0xb28Ad73ebCE83861105B4354bB8F241040533026',
+    splitAddress: '0xCfAca722bB50F56067fB62184198cdf4291dc53c',
     allocations: [
       {
         ownerAddress: usersData[0].publicAddress.toLowerCase(),
         percent: 60,
-        role: 'ARTIST',
+        roles: ['ARTIST'],
       },
       {
         ownerAddress: usersData[1].publicAddress.toLowerCase(),
         percent: 20,
-        role: 'PRODUCER',
+        roles: ['ARTIST', 'PRODUCER'],
       },
       {
         ownerAddress: usersData[2].publicAddress.toLowerCase(),
         percent: 15,
-        role: 'MANAGER',
+        roles: ['MANAGER'],
       },
       {
         ownerAddress: usersData[3].publicAddress.toLowerCase(),
         percent: 5,
-        role: 'ARTWORK_ARTIST',
+        roles: ['ARTWORK_ARTIST'],
+      },
+    ],
+  },
+  {
+    splitAddress: '0x093e0c37C6D074C046D10E7077E14DF785d882cB',
+    allocations: [
+      {
+        ownerAddress: usersData[0].publicAddress.toLowerCase(),
+        percent: 60,
+        roles: ['ARTIST', 'WRITER'],
+      },
+      {
+        ownerAddress: usersData[3].publicAddress.toLowerCase(),
+        percent: 30,
+        roles: ['ARTIST', 'PRODUCER'],
+      },
+      {
+        ownerAddress: usersData[4].publicAddress.toLowerCase(),
+        percent: 10,
+        roles: ['ARTIST'],
+      },
+    ],
+  },
+  {
+    splitAddress: '0xC403353E3cb2734AA5cF83696D204E8D58Bc8426',
+    allocations: [
+      {
+        ownerAddress: usersData[0].publicAddress.toLowerCase(),
+        percent: 50,
+        roles: ['ARTIST', 'WRITER', 'PRODUCER'],
+      },
+      {
+        ownerAddress: usersData[1].publicAddress.toLowerCase(),
+        percent: 50,
+        roles: ['ARTIST'],
       },
     ],
   },
