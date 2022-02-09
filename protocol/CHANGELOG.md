@@ -1,5 +1,16 @@
 # @soundxyz/protocol
 
+## 3.1.0
+
+### Minor Changes
+
+- 71c2e4d: Adds creditSplits & edition purchases
+
+### Patch Changes
+
+- Updated dependencies [71c2e4d]
+  - @soundxyz/common@2.0.0
+
 ## 3.0.0
 
 ### Major Changes
