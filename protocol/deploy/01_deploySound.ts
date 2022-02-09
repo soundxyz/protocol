@@ -45,7 +45,6 @@ const func: DeployFunction = async function ({ ethers, deployments, network, run
   // ============= Deployment ============= //
   const artistCreator = await deployments.deploy('ArtistCreator', {
     from: deployer.address,
-    gasLimit: 5_000_000,
     log: true,
     proxy: {
       owner: deployer.address,

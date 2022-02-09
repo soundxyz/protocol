@@ -2,10 +2,11 @@ import { constants, helpers, seedData } from '@soundxyz/common';
 import { Contract } from 'ethers';
 import { DeployFunction } from 'hardhat-deploy/types';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
+import { sortBy } from 'lodash';
 
 const { getAuthSignature } = helpers;
 
-const { artistsData, releaseData, usersData } = seedData;
+const { artistsData, releaseData, usersData, creditSplits } = seedData;
 
 const { NETWORK_MAP, baseURIs } = constants;
 
@@ -132,6 +133,38 @@ const func: DeployFunction = async function ({ ethers, waffle, deployments }: Ha
     // Move block.timestamp forward 10 seconds to avoid startTime conflicts
     await waffle.provider.send('evm_increaseTime', [10]);
     await waffle.provider.send('evm_mine', []);
+  }
+
+  //=============== Splits ======================//
+
+  const PERCENTAGE_SCALE = ethers.BigNumber.from(1e6);
+
+  console.log(`Deploying 0xSplit seed contracts on ${networkName}...`);
+
+  const splitMainDeployment = await deployments.get('SplitMain');
+  const splitMain = await ethers.getContractAt('SplitMain', splitMainDeployment.address);
+
+  for (const splitData of creditSplits) {
+    const artistWallet = signers[0];
+
+    console.log('artistWallet: ', artistWallet.address);
+
+    const orderedAllocations = sortBy(splitData.allocations, (o) => o.ownerAddress.toLowerCase());
+    const ownerAddresses = orderedAllocations.map((allocation) => allocation.ownerAddress.toLowerCase());
+    const percentAllocations = orderedAllocations.map((allocation) =>
+      ethers.BigNumber.from(Math.round(PERCENTAGE_SCALE.toNumber() * +allocation.percent) / 100)
+    );
+
+    const splitTx = await splitMain.createSplit(
+      ownerAddresses,
+      percentAllocations,
+      0, // splitter fee
+      artistWallet.address,
+      { gasLimit: 250_000 }
+    );
+
+    const splitReceipt = await splitTx.wait();
+    console.log('SplitWallet proxy deployed: ', splitReceipt.events[0]?.args?.split);
   }
 };
 
