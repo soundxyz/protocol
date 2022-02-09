@@ -1,5 +1,11 @@
 # @soundxyz/common
 
+## 2.0.0
+
+### Major Changes
+
+- 71c2e4d: Adds creditSplits & edition purchases
+
 ## 1.3.1
 
 ### Patch Changes
