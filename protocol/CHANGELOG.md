@@ -1,28 +1,5 @@
 # @soundxyz/protocol
 
-## 3.0.2-alpha-61863ce.0
-
-### Patch Changes
-
-- f7b5202: Adds seed buys & creditSplits
-- Updated dependencies [f7b5202]
-  - @soundxyz/common@2.0.1-alpha-61863ce.0
-
-## 3.0.1-alpha-977c7de.0
-
-### Patch Changes
-
-- d07bae9: ## @soundxyz/common
-
-  Adds more creditSplits seed data
-
-  ## @soundxyz/protocol
-
-  Removes gasLimit from ArtistCreator deploy script (was causing local out-of-gas bug)
-
-- Updated dependencies [d07bae9]
-  - @soundxyz/common@2.0.0-alpha-977c7de.0
-
 ## 3.0.0
 
 ### Major Changes

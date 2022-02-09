@@ -1,6 +1,6 @@
 {
   "name": "bin-test",
-  "version": "0.0.0-20220209043404",
+  "version": "0.0.1",
   "private": true,
   "dependencies": {
     "@soundxyz/protocol": "workspace:*"

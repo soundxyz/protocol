@@ -1,19 +1,5 @@
 # @soundxyz/common
 
-## 2.0.1-alpha-61863ce.0
-
-### Patch Changes
-
-- f7b5202: Adds seed buys & creditSplits
-
-## 2.0.0-alpha-977c7de.0
-
-### Major Changes
-
-- d07bae9: ## @soundxyz/common
-
-  Adds more creditSplits seed data
-
 ## 1.3.1
 
 ### Patch Changes
