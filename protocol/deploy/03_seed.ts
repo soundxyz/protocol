@@ -8,7 +8,7 @@ const { getAuthSignature } = helpers;
 
 const { artistsData, releaseData, usersData, creditSplits } = seedData;
 
-const { NETWORK_MAP, baseURIs } = constants;
+const { NETWORK_MAP, baseURIs, SOUND_ADMIN_PUBLIC_ADDRESS } = constants;
 
 const func: DeployFunction = async function ({ ethers, waffle, deployments }: HardhatRuntimeEnvironment) {
   const signers = await ethers.getSigners();
@@ -94,24 +94,62 @@ const func: DeployFunction = async function ({ ethers, waffle, deployments }: Ha
   const beaconOwner = await beaconContract.owner();
   console.log({ beaconOwner });
 
+  //=============== Deploy splits ======================//
+
+  const PERCENTAGE_SCALE = ethers.BigNumber.from(1e6);
+
+  console.log(`Deploying 0xSplit seed contracts on ${networkName}...`);
+
+  const splitMainDeployment = await deployments.get('SplitMain');
+  const splitMain = await ethers.getContractAt('SplitMain', splitMainDeployment.address);
+  const testOshiWallet = signers[0];
+
+  for (const splitData of creditSplits) {
+    console.log('testOshiWallet: ', testOshiWallet.address);
+
+    const orderedAllocations = sortBy(splitData.allocations, (o) => o.ownerAddress.toLowerCase());
+    const ownerAddresses = orderedAllocations.map((allocation) => allocation.ownerAddress.toLowerCase());
+    const percentAllocations = orderedAllocations.map((allocation) =>
+      ethers.BigNumber.from(Math.round(PERCENTAGE_SCALE.toNumber() * +allocation.percent) / 100)
+    );
+
+    const splitTx = await splitMain.createSplit(
+      ownerAddresses,
+      percentAllocations,
+      0, // splitter fee
+      testOshiWallet.address,
+      { gasLimit: 250_000 }
+    );
+
+    const splitReceipt = await splitTx.wait();
+    console.log('SplitWallet proxy deployed: ', splitReceipt.events[0]?.args?.split);
+  }
+
   //=============== Mint NFT editions ======================//
 
   for (const [index, releaseDatum] of Object.entries(releaseData)) {
+    const splitData = creditSplits[index];
     const artistIdx = Number(index) % artists.length;
     const { name, contractAddress } = artists[artistIdx];
-    const currentSigner = signers[artistIdx];
-    const artistContract = new Contract(contractAddress, artistArtifact.abi, currentSigner);
+    const currentArtistWallet = signers[artistIdx];
+    const artistContract = new Contract(contractAddress, artistArtifact.abi, currentArtistWallet);
 
     console.log({ name, contractAddress });
 
     // TODO: when testing with presale, this may need to be changed
     const presaleQuantity = 0;
-    const signerAddress = usersData[0].publicAddress;
+    const signerAddress = SOUND_ADMIN_PUBLIC_ADDRESS;
 
     const { price, quantity, royaltyBPS, startTime, endTime, releaseId } = releaseDatum;
 
+    // If splitData exists, then use that address, otherwise use the current artist's wallet
+    if (splitData) {
+      console.log(`Release ${releaseId} is getting split! Using: ${splitData.splitAddress} as fundingRecipient`);
+    }
+    const fundingRecipient = splitData?.splitAddress || currentArtistWallet.address;
+
     const tx = await artistContract.createEdition(
-      currentSigner.address,
+      fundingRecipient,
       price,
       quantity,
       royaltyBPS,
@@ -145,38 +183,6 @@ const func: DeployFunction = async function ({ ethers, waffle, deployments }: Ha
     console.log(`Bought edition for ${name}. txHash: ${buyTx.hash}`);
 
     await buyTx.wait();
-  }
-
-  //=============== Splits ======================//
-
-  const PERCENTAGE_SCALE = ethers.BigNumber.from(1e6);
-
-  console.log(`Deploying 0xSplit seed contracts on ${networkName}...`);
-
-  const splitMainDeployment = await deployments.get('SplitMain');
-  const splitMain = await ethers.getContractAt('SplitMain', splitMainDeployment.address);
-
-  for (const splitData of creditSplits) {
-    const artistWallet = signers[0];
-
-    console.log('artistWallet: ', artistWallet.address);
-
-    const orderedAllocations = sortBy(splitData.allocations, (o) => o.ownerAddress.toLowerCase());
-    const ownerAddresses = orderedAllocations.map((allocation) => allocation.ownerAddress.toLowerCase());
-    const percentAllocations = orderedAllocations.map((allocation) =>
-      ethers.BigNumber.from(Math.round(PERCENTAGE_SCALE.toNumber() * +allocation.percent) / 100)
-    );
-
-    const splitTx = await splitMain.createSplit(
-      ownerAddresses,
-      percentAllocations,
-      0, // splitter fee
-      artistWallet.address,
-      { gasLimit: 250_000 }
-    );
-
-    const splitReceipt = await splitTx.wait();
-    console.log('SplitWallet proxy deployed: ', splitReceipt.events[0]?.args?.split);
   }
 };
 

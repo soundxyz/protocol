@@ -43,3 +43,5 @@ export const genres = [
   'Triphop',
   'World',
 ];
+
+export const SOUND_ADMIN_PUBLIC_ADDRESS = '0xed0faf139565bae4d856eeaffad7c81515457246';
