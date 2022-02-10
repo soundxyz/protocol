@@ -1,5 +1,12 @@
 # @soundxyz/common
 
+## 2.1.0
+
+### Minor Changes
+
+- c7e28ae: - Makes Oshi's first 3 editions use the creditSplit.splitAddress for fundingRecipient
+  - Adds SOUND_ADMIN_PUBLIC_ADDRESS to common/src/constants
+
 ## 2.0.0
 
 ### Major Changes
