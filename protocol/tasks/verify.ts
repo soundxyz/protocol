@@ -1,31 +1,30 @@
 import { task } from 'hardhat/config';
 
-const adddressToVerify = '0xff34bbab3df40d40e0f111d8f2527f574cf467e9';
+task('verify-contract', 'Verify a contract')
+  .addParam('name', 'The name of the contract')
+  .addParam('address', 'The address of the contract to verify')
+  .setAction(async (args, hardhat) => {
+    const { ethers, run, deployments } = hardhat;
+    const { name, address } = args;
 
-task('verify-contract', async (_args, hardhat) => {
-  const { ethers, run, deployments } = hardhat;
-  const [soundDeployer] = await ethers.getSigners();
+    const argsForArtistInit = [
+      '0xB0A36b3CeDf210f37a5E7BC28d4b8E91D4E3C412', // deployer address
+      '0',
+      `Sound.xyz ArtistV2.sol`,
+      `SOUND V2`,
+      'https://sound.xyz/api/metadata/',
+    ];
 
-  console.log({ adddressToVerify });
+    const artistCreator = await ethers.getContract('ArtistCreator');
+    let beaconAddress = await artistCreator.beaconAddress();
 
-  const argsForArtistInit = [
-    '0x2F8f8FbF095345577b901d88EfA8bA4EC3FE8E39', // deployer address
-    '1',
-    'Gigamesh',
-    'GIGAMESH',
-    'https://sound.xyz/api/metadata/',
-  ];
+    const artistArtifact = await deployments.getArtifact(name);
+    const iface = new ethers.utils.Interface(artistArtifact.abi);
+    const functionSelector = iface.encodeFunctionData('initialize', argsForArtistInit);
+    const beaconConstructorArgs = [beaconAddress, functionSelector];
 
-  const artistCreator = await ethers.getContract('ArtistCreator');
-  let beaconAddress = await artistCreator.beaconAddress();
-
-  const artistArtifact = await deployments.getArtifact('Artist');
-  const iface = new ethers.utils.Interface(artistArtifact.abi);
-  const functionSelector = iface.encodeFunctionData('initialize', argsForArtistInit);
-  const beaconConstructorArgs = [beaconAddress, functionSelector];
-
-  await run('verify:verify', {
-    address: adddressToVerify,
-    constructorArguments: beaconConstructorArgs,
+    await run('verify:verify', {
+      address: address,
+      constructorArguments: beaconConstructorArgs,
+    });
   });
-});
