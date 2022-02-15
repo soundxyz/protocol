@@ -3,7 +3,6 @@ import hardhat_ArtistCreator from './deployments/localhost/ArtistCreator.json';
 import hardhat_SplitMain from './deployments/localhost/SplitMain.json';
 import mainnet_ArtistCreator from './deployments/mainnet/ArtistCreator.json';
 import rinkeby_ArtistCreator from './deployments/rinkeby/ArtistCreator.json';
-import rinkeby_SplitMain from './deployments/rinkeby/SplitMain.json';
 
 type Addresses = {
   artistCreator?: string;
@@ -17,11 +16,11 @@ export const addresses: { [key: string]: Addresses } = {
   },
   rinkeby: {
     artistCreator: rinkeby_ArtistCreator.address,
-    splitMain: rinkeby_SplitMain.address,
+    splitMain: '0x2ed6c4B5dA6378c7897AC67Ba9e43102Feb694EE',
   },
   mainnet: {
     artistCreator: mainnet_ArtistCreator.address,
-    // splitMain:
+    splitMain: '0x2ed6c4B5dA6378c7897AC67Ba9e43102Feb694EE',
   },
 };
 
