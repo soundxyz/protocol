@@ -1,5 +1,14 @@
 # @soundxyz/protocol
 
+## 3.3.0
+
+### Minor Changes
+
+- c0279a3: Improves hardhat tasks
+- 575fd17: - Updates 0xSplits contracts
+  - Adds splitMain mainnet address and new rinkeby address
+  - removes `protocol/src/deployments/rinkeby/SplitMain.json` - not needed
+
 ## 3.2.0
 
 ### Minor Changes
