@@ -37,7 +37,7 @@
     "@openzeppelin/contracts-upgradeable": "^4.4.0",
     "@openzeppelin/hardhat-upgrades": "^1.12.0",
     "@rari-capital/solmate": "^6.2.0",
-    "@soundxyz/common": "workspace:^2.1.0",
+    "@soundxyz/common": "workspace:^2.2.0",
     "@typechain/ethers-v5": "^7.1.0",
     "@typechain/hardhat": "^2.3.0",
     "dotenv": "^16.0.0",
