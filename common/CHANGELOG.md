@@ -1,5 +1,11 @@
 # @soundxyz/common
 
+## 2.2.0
+
+### Minor Changes
+
+- c3d3fc8: Changes roles to CreditRole and increases seed data
+
 ## 2.1.0
 
 ### Minor Changes
