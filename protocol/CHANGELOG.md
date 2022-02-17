@@ -1,5 +1,11 @@
 # @soundxyz/protocol
 
+## 3.3.1
+
+### Patch Changes
+
+- 9ada656: Upgrades common package to fix seed bug caused by new seedData
+
 ## 3.3.0
 
 ### Minor Changes
