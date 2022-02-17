@@ -304,29 +304,67 @@ export const releaseData: ReleaseDatum[] = releaseIds.map((releaseId, idx) => {
   return data;
 });
 
+export enum CreditRole {
+  ARTIST = 'ARTIST',
+  PRODUCER = 'PRODUCER',
+  SONGWRITER = 'SONGWRITER',
+  CURATOR = 'CURATOR',
+  OTHER = 'OTHER',
+}
+
 export const creditSplits = [
   {
     splitAddress: '0xCfAca722bB50F56067fB62184198cdf4291dc53c',
     allocations: [
       {
         ownerAddress: usersData[0].publicAddress.toLowerCase(),
-        percent: 60,
-        roles: ['ARTIST'],
+        percent: 10.69,
+        roles: [CreditRole.ARTIST, CreditRole.PRODUCER, CreditRole.SONGWRITER],
       },
       {
         ownerAddress: usersData[1].publicAddress.toLowerCase(),
-        percent: 20,
-        roles: ['ARTIST', 'PRODUCER'],
+        percent: 10,
+        roles: [CreditRole.ARTIST, CreditRole.PRODUCER, CreditRole.SONGWRITER],
       },
       {
         ownerAddress: usersData[2].publicAddress.toLowerCase(),
-        percent: 15,
-        roles: ['MANAGER'],
+        percent: 10,
+        roles: [CreditRole.ARTIST, CreditRole.PRODUCER, CreditRole.SONGWRITER],
       },
       {
         ownerAddress: usersData[3].publicAddress.toLowerCase(),
-        percent: 5,
-        roles: ['ARTWORK_ARTIST'],
+        percent: 10,
+        roles: [CreditRole.PRODUCER, CreditRole.SONGWRITER],
+      },
+      {
+        ownerAddress: usersData[4].publicAddress.toLowerCase(),
+        percent: 10,
+        roles: [CreditRole.PRODUCER, CreditRole.SONGWRITER],
+      },
+      {
+        ownerAddress: usersData[5].publicAddress.toLowerCase(),
+        percent: 10,
+        roles: [CreditRole.OTHER],
+      },
+      {
+        ownerAddress: usersData[6].publicAddress.toLowerCase(),
+        percent: 10,
+        roles: [CreditRole.OTHER],
+      },
+      {
+        ownerAddress: usersData[7].publicAddress.toLowerCase(),
+        percent: 10,
+        roles: [CreditRole.CURATOR],
+      },
+      {
+        ownerAddress: usersData[8].publicAddress.toLowerCase(),
+        percent: 10,
+        roles: [CreditRole.CURATOR],
+      },
+      {
+        ownerAddress: usersData[9].publicAddress.toLowerCase(),
+        percent: 9.31,
+        roles: [CreditRole.CURATOR],
       },
     ],
   },
@@ -336,17 +374,17 @@ export const creditSplits = [
       {
         ownerAddress: usersData[0].publicAddress.toLowerCase(),
         percent: 60,
-        roles: ['ARTIST', 'WRITER'],
+        roles: [CreditRole.ARTIST, CreditRole.PRODUCER, CreditRole.SONGWRITER],
       },
       {
         ownerAddress: usersData[3].publicAddress.toLowerCase(),
         percent: 30,
-        roles: ['ARTIST', 'PRODUCER'],
+        roles: [CreditRole.ARTIST, CreditRole.PRODUCER],
       },
       {
         ownerAddress: usersData[4].publicAddress.toLowerCase(),
         percent: 10,
-        roles: ['ARTIST'],
+        roles: [CreditRole.ARTIST],
       },
     ],
   },
@@ -356,12 +394,12 @@ export const creditSplits = [
       {
         ownerAddress: usersData[0].publicAddress.toLowerCase(),
         percent: 50,
-        roles: ['ARTIST', 'WRITER', 'PRODUCER'],
+        roles: [CreditRole.ARTIST, CreditRole.PRODUCER],
       },
       {
         ownerAddress: usersData[1].publicAddress.toLowerCase(),
         percent: 50,
-        roles: ['ARTIST'],
+        roles: [CreditRole.ARTIST, CreditRole.SONGWRITER],
       },
     ],
   },
