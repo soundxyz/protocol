@@ -471,20 +471,21 @@ function testArtistContract(deployContract: Function, name: string) {
       }
     });
 
-    it('increments the balance of the contract', async () => {
+    it('increments the balance of the funding recipient', async () => {
       const quantity = 5;
       await setUpContract({ quantity: BigNumber.from(quantity) });
-      const [_, ...buyers] = await ethers.getSigners();
+      const signers = await ethers.getSigners();
+      const buyers = signers.slice(3);
+      const initialBalance = await provider.getBalance(fundingRecipient.address);
 
       for (let count = 1; count <= quantity; count++) {
         const revenue = price.mul(count);
         const currentBuyer = buyers[count];
-
         await artist.connect(currentBuyer).buyEdition(EDITION_ID, EMPTY_SIGNATURE, {
           value: price,
         });
-        const balance = await provider.getBalance(artist.address);
-        await expect(balance.toString()).to.eq(revenue.toString());
+        const finalBalance = await provider.getBalance(fundingRecipient.address);
+        expect(finalBalance.toString()).to.eq(revenue.add(initialBalance).toString());
       }
     });
 
@@ -589,35 +590,6 @@ function testArtistContract(deployContract: Function, name: string) {
       const purchase2Receipt = await purchase2.wait();
 
       await expect(purchase2Receipt.status).to.equal(1);
-    });
-  });
-
-  describe('withdrawFunds', () => {
-    it('transfers edition funds to the fundingRecipient', async () => {
-      const quantity = 10;
-      await setUpContract({ quantity: BigNumber.from(quantity) });
-
-      const [soundOwner, artistEOA, fundingRecipient, ...buyers] = await ethers.getSigners();
-      const originalRecipientBalance = await provider.getBalance(fundingRecipient.address);
-
-      for (let count = 1; count <= quantity; count++) {
-        const currentBuyer = buyers[count];
-        await artist.connect(currentBuyer).buyEdition(EDITION_ID, EMPTY_SIGNATURE, {
-          value: price,
-        });
-      }
-
-      // any address can call withdrawFunds
-      await artist.connect(soundOwner).withdrawFunds(EDITION_ID);
-
-      const contractBalance = await provider.getBalance(artist.address);
-      // All the funds are extracted.
-      await expect(contractBalance.toString()).to.eq('0');
-
-      const recipientBalance = await provider.getBalance(fundingRecipient.address);
-      const revenue = price.mul(quantity);
-
-      await expect(recipientBalance.toString()).to.eq(originalRecipientBalance.add(revenue));
     });
   });
 
