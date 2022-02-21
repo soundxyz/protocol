@@ -66,8 +66,6 @@ export async function getPresaleSignature({
     ],
   };
 
-  // console.log({ contractAddress: contractAddress.toLowerCase(), buyerAddress, editionId });
-
   const signature = await wallet._signTypedData(domainSeparator, types, {
     contractAddress: contractAddress.toLowerCase(),
     buyerAddress,
