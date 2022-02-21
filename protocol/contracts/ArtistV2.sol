@@ -71,9 +71,9 @@ contract ArtistV2 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
     mapping(uint256 => Edition) public editions;
     // Mapping of token id to edition id.
     mapping(uint256 => uint256) public tokenToEdition;
-    // The amount of funds that have been deposited for a given edition.
+    // <DEPRECATED IN V3> The amount of funds that have been deposited for a given edition.
     mapping(uint256 => uint256) public depositedForEdition;
-    // The amount of funds that have already been withdrawn for a given edition.
+    // <DEPRECATED IN V3> The amount of funds that have already been withdrawn for a given edition.
     mapping(uint256 => uint256) public withdrawnForEdition;
     // The presale typehash (used for checking signature validity)
     bytes32 public constant PRESALE_TYPEHASH =
@@ -223,32 +223,21 @@ contract ArtistV2 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
         // Don't allow purchases after the end time
         require(endTime > block.timestamp, 'Auction has ended');
 
-        // Update the deposited total for the edition
-        depositedForEdition[_editionId] += msg.value;
+        // Send funds to the funding recipient.
+        _sendFunds(editions[_editionId].fundingRecipient, msg.value);
 
         // Increment the number of tokens sold for this edition.
         editions[_editionId].numSold++;
 
-        // Mint a new token for the sender, using the `tokenId`.
-        _mint(msg.sender, atTokenId.current());
-
         // Store the mapping of token id to the edition being purchased.
         tokenToEdition[atTokenId.current()] = _editionId;
+
+        // Mint a new token for the sender, using the `tokenId`.
+        _mint(msg.sender, atTokenId.current());
 
         emit EditionPurchased(_editionId, atTokenId.current(), editions[_editionId].numSold, msg.sender);
 
         atTokenId.increment();
-    }
-
-    function withdrawFunds(uint256 _editionId) external {
-        // Compute the amount available for withdrawing from this edition.
-        uint256 remainingForEdition = depositedForEdition[_editionId] - withdrawnForEdition[_editionId];
-
-        // Set the amount withdrawn to the amount deposited.
-        withdrawnForEdition[_editionId] = depositedForEdition[_editionId];
-
-        // Send the amount that was remaining for the edition, to the funding recipient.
-        _sendFunds(editions[_editionId].fundingRecipient, remainingForEdition);
     }
 
     /// @notice Sets the start time for an edition
