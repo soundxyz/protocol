@@ -18,6 +18,7 @@ import {
   getRandomInt,
   INVALID_PRIVATE_KEY,
   MAX_UINT32,
+  NULL_ADDRESS,
 } from './helpers';
 
 const { getAuthSignature, getPresaleSignature } = helpers;
@@ -246,16 +247,7 @@ function testArtistContract(deployContract: Function, name: string) {
       const signers = await ethers.getSigners();
       const [_, artistEOA] = signers;
 
-      const tx = artist.createEdition(
-        artistEOA.address,
-        price,
-        2,
-        royaltyBPS,
-        startTime,
-        endTime,
-        1,
-        '0x0000000000000000000000000000000000000000'
-      );
+      const tx = artist.createEdition(artistEOA.address, price, 2, royaltyBPS, startTime, endTime, 1, NULL_ADDRESS);
 
       await expect(tx).to.be.revertedWith('Signer address cannot be 0');
     });
@@ -684,6 +676,89 @@ function testArtistContract(deployContract: Function, name: string) {
       expect(event.args.timeType).to.eq(1);
       expect(event.args.editionId.toString()).to.eq(EDITION_ID.toString());
       expect(event.args.newTime.toString()).to.eq(newTime.toString());
+    });
+  });
+
+  describe('setSignerAddress', () => {
+    it('only allows owner to call function', async () => {
+      await setUpContract();
+      const [_, notOwner] = await ethers.getSigners();
+
+      const tx = artist.connect(notOwner).setSignerAddress(EDITION_ID, NULL_ADDRESS);
+
+      await expect(tx).to.be.revertedWith('Ownable: caller is not the owner');
+    });
+
+    it('prevents attempt to set null address', async () => {
+      await setUpContract();
+
+      const tx = artist.setSignerAddress(EDITION_ID, NULL_ADDRESS);
+
+      expect(tx).to.be.revertedWith('Signer address cannot be 0');
+    });
+
+    it('sets a new signer address for the edition', async () => {
+      await setUpContract();
+      const [_, newSigner] = await ethers.getSigners();
+
+      const tx = await artist.setSignerAddress(EDITION_ID, newSigner.address);
+      await tx.wait();
+
+      const editionInfo = await artist.editions(EDITION_ID);
+
+      await expect(editionInfo.signerAddress).to.equal(newSigner.address);
+    });
+
+    it('emits event', async () => {
+      await setUpContract();
+      const [_, newSigner] = await ethers.getSigners();
+
+      const tx = await artist.setSignerAddress(EDITION_ID, newSigner.address);
+      const receipt = await tx.wait();
+      const event = receipt.events.find((e) => e.event === 'SignerAddressSet');
+
+      expect(event.args.signerAddress).to.eq(newSigner.address);
+    });
+  });
+
+  describe('setPresaleQuantity', () => {
+    it('only allows owner to call function', async () => {
+      await setUpContract();
+      const [_, notOwner] = await ethers.getSigners();
+
+      const tx = artist.connect(notOwner).setPresaleQuantity(EDITION_ID, 69);
+
+      await expect(tx).to.be.revertedWith('Ownable: caller is not the owner');
+    });
+
+    it('prevents attempt to set presale quantity higher than quantity', async () => {
+      await setUpContract({ quantity: BigNumber.from(69) });
+
+      const tx = artist.setPresaleQuantity(EDITION_ID, 70);
+
+      expect(tx).to.be.revertedWith('Must not exceed quantity');
+    });
+
+    it('sets a new presale quantity for the edition', async () => {
+      const newPresaleQuantity = 420;
+      await setUpContract({ quantity: BigNumber.from(420), presaleQuantity: BigNumber.from(69) });
+      const tx = await artist.setPresaleQuantity(EDITION_ID, newPresaleQuantity);
+      await tx.wait();
+
+      const editionInfo = await artist.editions(EDITION_ID);
+
+      await expect(editionInfo.presaleQuantity.toString()).to.equal(newPresaleQuantity.toString());
+    });
+
+    it('emits event', async () => {
+      const newPresaleQuantity = 420;
+      await setUpContract({ quantity: BigNumber.from(420), presaleQuantity: BigNumber.from(69) });
+      const tx = await artist.setPresaleQuantity(EDITION_ID, newPresaleQuantity);
+      const receipt = await tx.wait();
+
+      const event = receipt.events.find((e) => e.event === 'PresaleQuantitySet');
+
+      await expect(event.args.presaleQuantity.toString()).to.equal(newPresaleQuantity.toString());
     });
   });
 
