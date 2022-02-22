@@ -68,3 +68,9 @@ export const deployArtistImplementation = async (soundOwner: SignerWithAddress) 
 
   return protoArtist;
 };
+
+// shifts edition id to the left by 128 bits and adds the token id in the bottom bits
+export const getTokenId = (editionId: number | string, numSold: number | string) => {
+  const shiftFactor = BigNumber.from(1).mul(2).pow(128);
+  return BigNumber.from(editionId).mul(shiftFactor).add(numSold);
+};
