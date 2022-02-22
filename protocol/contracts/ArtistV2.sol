@@ -240,6 +240,17 @@ contract ArtistV2 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
         atTokenId.increment();
     }
 
+    function withdrawFunds(uint256 _editionId) external {
+        // Compute the amount available for withdrawing from this edition.
+        uint256 remainingForEdition = depositedForEdition[_editionId] - withdrawnForEdition[_editionId];
+
+        // Set the amount withdrawn to the amount deposited.
+        withdrawnForEdition[_editionId] = depositedForEdition[_editionId];
+
+        // Send the amount that was remaining for the edition, to the funding recipient.
+        _sendFunds(editions[_editionId].fundingRecipient, remainingForEdition);
+    }
+
     /// @notice Sets the start time for an edition
     function setStartTime(uint256 _editionId, uint32 _startTime) external onlyOwner {
         editions[_editionId].startTime = _startTime;
