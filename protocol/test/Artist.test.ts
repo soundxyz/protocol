@@ -1,7 +1,7 @@
 import '@nomiclabs/hardhat-ethers';
 
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/dist/src/signers';
-import { helpers } from '@soundxyz/common';
+import { helpers as commonHelpers } from '@soundxyz/common';
 import { expect } from 'chai';
 import { BigNumber, Contract } from 'ethers';
 import { ethers, waffle } from 'hardhat';
@@ -16,12 +16,13 @@ import {
   EXAMPLE_ARTIST_SYMBOL,
   getRandomBN,
   getRandomInt,
+  getTokenId,
   INVALID_PRIVATE_KEY,
   MAX_UINT32,
   NULL_ADDRESS,
 } from './helpers';
 
-const { getAuthSignature, getPresaleSignature } = helpers;
+const { getAuthSignature, getPresaleSignature } = commonHelpers;
 
 const { provider } = waffle;
 
@@ -427,8 +428,11 @@ function testArtistContract(deployContract: Function, name: string) {
       const receipt = await tx.wait();
       const purchaseEvent = artist.interface.parseLog(receipt.events[1]).args;
 
+      const TOKEN_COUNT = 1;
+      const tokenId = getTokenId(EDITION_ID, TOKEN_COUNT);
+
       await expect(purchaseEvent.editionId.toString()).to.eq(EDITION_ID);
-      await expect(purchaseEvent.tokenId.toString()).to.eq('1');
+      await expect(purchaseEvent.tokenId.toString()).to.eq(tokenId);
       await expect(purchaseEvent.buyer.toString()).to.eq(purchaser.address);
       await expect(purchaseEvent.numSold.toString()).to.eq('1');
     });
@@ -453,11 +457,12 @@ function testArtistContract(deployContract: Function, name: string) {
       await setUpContract({ quantity: BigNumber.from(quantity) });
       const [_, ...buyers] = await ethers.getSigners();
 
-      for (let tokenId = 1; tokenId < quantity; tokenId++) {
-        const currentBuyer = buyers[tokenId];
-        await artist.connect(buyers[tokenId]).buyEdition(EDITION_ID, EMPTY_SIGNATURE, {
+      for (let tokenCount = 1; tokenCount < quantity; tokenCount++) {
+        const currentBuyer = buyers[tokenCount];
+        await artist.connect(buyers[tokenCount]).buyEdition(EDITION_ID, EMPTY_SIGNATURE, {
           value: price,
         });
+        const tokenId = getTokenId(EDITION_ID, tokenCount);
         const owner = await artist.ownerOf(tokenId);
         await expect(owner).to.eq(currentBuyer.address);
       }
@@ -485,14 +490,18 @@ function testArtistContract(deployContract: Function, name: string) {
       await setUpContract({ quantity: BigNumber.from(quantity), editionCount: 3 });
       const [_, ...buyers] = await ethers.getSigners();
       const editionId = 3;
-      for (let tokenId = 1; tokenId < quantity; tokenId++) {
-        const currentBuyer = buyers[tokenId];
+
+      for (let tokenCount = 1; tokenCount < quantity; tokenCount++) {
+        const currentBuyer = buyers[tokenCount];
 
         await artist.connect(currentBuyer).buyEdition(editionId, EMPTY_SIGNATURE, {
           value: price,
         });
-        const tokenURI = `${BASE_URI}${EXAMPLE_ARTIST_ID}/${editionId}/${tokenId}`;
+
+        const tokenId = getTokenId(editionId, tokenCount);
         const resp = await artist.tokenURI(tokenId);
+        const tokenURI = `${BASE_URI}${EXAMPLE_ARTIST_ID}/${editionId}/${tokenId}`;
+
         await expect(resp).to.eq(tokenURI);
       }
     });
@@ -764,7 +773,7 @@ function testArtistContract(deployContract: Function, name: string) {
 
   describe('getApproved', () => {
     it('returns the receiver address', async () => {
-      const TOKEN_ID = '1';
+      const TOKEN_COUNT = '1';
       await setUpContract();
       const [_, receiver, buyer] = await ethers.getSigners();
 
@@ -772,8 +781,9 @@ function testArtistContract(deployContract: Function, name: string) {
         value: price,
       });
 
-      await artist.connect(buyer).approve(receiver.address, TOKEN_ID);
-      const approved = await artist.getApproved(TOKEN_ID);
+      const tokenId = getTokenId(EDITION_ID, TOKEN_COUNT);
+      await artist.connect(buyer).approve(receiver.address, tokenId);
+      const approved = await artist.getApproved(tokenId);
       await expect(approved).to.eq(receiver.address);
     });
   });
@@ -787,78 +797,33 @@ function testArtistContract(deployContract: Function, name: string) {
         value: price,
       });
 
-      const tx = artist.transferFrom(buyer.address, receiver.address, '1');
+      const tokenId = getTokenId(EDITION_ID, '1');
+      const tx = artist.transferFrom(buyer.address, receiver.address, tokenId);
+
       await expect(tx).to.be.revertedWith('ERC721: transfer caller is not owner nor approved');
     });
 
     it('transfers when approved', async () => {
       await setUpContract();
       const [_, receiver, buyer] = await ethers.getSigners();
-      const TOKEN_ID = '1';
+      const TOKEN_COUNT = '1';
 
       await artist.connect(buyer).buyEdition(EDITION_ID, EMPTY_SIGNATURE, {
         value: price,
       });
 
-      await artist.connect(buyer).approve(receiver.address, TOKEN_ID);
-      await artist.connect(receiver).transferFrom(buyer.address, receiver.address, TOKEN_ID);
+      const tokenId = getTokenId(EDITION_ID, TOKEN_COUNT);
 
-      const owner = await artist.ownerOf(TOKEN_ID);
-      await expect(owner).to.eq(receiver.address);
+      await artist.connect(buyer).approve(receiver.address, tokenId);
+      await artist.connect(receiver).transferFrom(buyer.address, receiver.address, tokenId);
+
+      const owner = await artist.ownerOf(tokenId);
       const buyerBalance = await artist.balanceOf(buyer.address);
-      await expect(buyerBalance.toString()).to.eq('0');
       const receiverBalance = await artist.balanceOf(receiver.address);
+
+      await expect(owner).to.eq(receiver.address);
+      await expect(buyerBalance.toString()).to.eq('0');
       await expect(receiverBalance.toString()).to.eq('1'); // now owns one token
-    });
-  });
-
-  describe('getTokenIdsOfEdition', () => {
-    it('returns correct list of ids', async () => {
-      const totalQuantity = 30;
-      const editionCount = 3;
-      await setUpContract({ editionCount, quantity: BigNumber.from(totalQuantity / editionCount) });
-      const [_, ...buyers] = await ethers.getSigners();
-
-      const tokenIdsOfEditions = {
-        1: [],
-        2: [],
-        3: [],
-      };
-      for (let tokenId = 1; tokenId < totalQuantity; tokenId++) {
-        let currentEditionId = (tokenId % editionCount) + 1; // loops through editions
-        const currentBuyer = buyers[tokenId % buyers.length]; // loops through buyers
-        await artist.connect(currentBuyer).buyEdition(currentEditionId, EMPTY_SIGNATURE, {
-          value: price,
-        });
-        tokenIdsOfEditions[currentEditionId].push(BigNumber.from(tokenId));
-        const editionTokenIds = await artist.getTokenIdsOfEdition(currentEditionId);
-        await expect(editionTokenIds).to.deep.eq(tokenIdsOfEditions[currentEditionId]);
-      }
-    });
-  });
-
-  describe('getOwnersOfEdition', () => {
-    it('returns correct list of owners', async () => {
-      const totalQuantity = 30;
-      const editionCount = 3;
-      await setUpContract({ editionCount, quantity: BigNumber.from(totalQuantity / editionCount) });
-      const [_, ...buyers] = await ethers.getSigners();
-
-      const ownersOfEditions = {
-        1: [],
-        2: [],
-        3: [],
-      };
-      for (let tokenId = 1; tokenId < totalQuantity; tokenId++) {
-        let currentEditionId = (tokenId % editionCount) + 1; // loops through editions
-        const currentBuyer = buyers[tokenId % buyers.length]; // loops through buyers
-        await artist.connect(currentBuyer).buyEdition(currentEditionId, EMPTY_SIGNATURE, {
-          value: price,
-        });
-        ownersOfEditions[currentEditionId].push(currentBuyer.address);
-        const ownersOfEdition = await artist.getOwnersOfEdition(currentEditionId);
-        await expect(ownersOfEdition).to.deep.eq(ownersOfEditions[currentEditionId]);
-      }
     });
   });
 
@@ -910,7 +875,7 @@ function testArtistContract(deployContract: Function, name: string) {
         await tx.wait();
 
         // Since we instantiate the contract and only buy 1 token each time, the token id will always be 1
-        const tokenId = BigNumber.from(1);
+        const tokenId = getTokenId(editionId, 1);
         const expectedRoyaltyInfo = await artist.royaltyInfo(tokenId, secondarySalePrice);
         const royaltyAmount = royalty.mul(secondarySalePrice).div(BigNumber.from(10_000));
 
