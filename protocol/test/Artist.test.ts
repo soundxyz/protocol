@@ -593,6 +593,35 @@ function testArtistContract(deployContract: Function, name: string) {
     });
   });
 
+  describe('withdrawFunds', () => {
+    it('transfers edition funds to the fundingRecipient', async () => {
+      const quantity = 10;
+      await setUpContract({ quantity: BigNumber.from(quantity) });
+
+      const [soundOwner, artistEOA, fundingRecipient, ...buyers] = await ethers.getSigners();
+      const originalRecipientBalance = await provider.getBalance(fundingRecipient.address);
+
+      for (let count = 1; count <= quantity; count++) {
+        const currentBuyer = buyers[count];
+        await artist.connect(currentBuyer).buyEdition(EDITION_ID, EMPTY_SIGNATURE, {
+          value: price,
+        });
+      }
+
+      // any address can call withdrawFunds
+      await artist.connect(soundOwner).withdrawFunds(EDITION_ID);
+
+      const contractBalance = await provider.getBalance(artist.address);
+      // All the funds are extracted.
+      await expect(contractBalance.toString()).to.eq('0');
+
+      const recipientBalance = await provider.getBalance(fundingRecipient.address);
+      const revenue = price.mul(quantity);
+
+      await expect(recipientBalance.toString()).to.eq(originalRecipientBalance.add(revenue));
+    });
+  });
+
   describe('setStartTime', () => {
     const newTime = currentSeconds() + 100;
 
