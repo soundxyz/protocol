@@ -262,13 +262,19 @@ contract ArtistV2 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
     }
 
     /// @notice Returns token URI (metadata URL). e.g. https://sound.xyz/api/metadata/[artistId]/[editionId]/[tokenId]
+    /// @dev Concatenate the baseURI, editionId and tokenId, to create URI.
     function tokenURI(uint256 _tokenId) public view override returns (string memory) {
         require(_exists(_tokenId), 'ERC721Metadata: URI query for nonexistent token');
 
         uint256 editionId = tokenToEditionView(_tokenId);
 
-        // Concatenate the compoents, baseURI, editionId and tokenId, to create URI.
-        return string(abi.encodePacked(baseURI, editionId.toString(), '/', _tokenId.toString()));
+        // If _tokenId is less than 2**128, it's a pre-V3 upgrade token and we can simply append it to the URI
+        if (_tokenId < 2**128) {
+            return string(abi.encodePacked(baseURI, editionId.toString(), '/', _tokenId.toString()));
+        }
+
+        // If _tokenId is larger than 2**128, it's a post-V3 upgrade token and we need to subtract the edition id to get the serial #
+        return string(abi.encodePacked(baseURI, editionId.toString(), '/', (_tokenId - (editionId << 128)).toString()));
     }
 
     /// @notice Returns contract URI used by Opensea. e.g. https://sound.xyz/api/metadata/[artistId]/storefront
