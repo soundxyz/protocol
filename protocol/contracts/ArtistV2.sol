@@ -77,7 +77,9 @@ contract ArtistV2 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
     mapping(uint256 => uint256) public withdrawnForEdition;
     // The presale typehash (used for checking signature validity)
     bytes32 public constant PRESALE_TYPEHASH =
-        keccak256('EditionInfo(address contractAddress,address buyerAddress,uint256 editionId)');
+        keccak256(
+            'EditionInfo(address contractAddress,address buyerAddress,uint256 editionId,uint256 requestedTokenId)'
+        );
 
     // ================================
     // EVENTS
@@ -195,11 +197,16 @@ contract ArtistV2 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
     /// @notice Creates a new token for the given edition, and assigns it to the buyer
     /// @param _editionId The id of the edition to purchase
     /// @param _signature A signed message for authorizing presale purchases
-    function buyEdition(uint256 _editionId, bytes calldata _signature) external payable {
+    function buyEdition(
+        uint256 _editionId,
+        bytes calldata _signature,
+        uint256 _requestedTokenId
+    ) external payable {
         // Caching variables locally to reduce reads
         uint256 price = editions[_editionId].price;
         uint32 quantity = editions[_editionId].quantity;
         uint32 numSold = editions[_editionId].numSold;
+        uint32 newNumSold = numSold + 1;
         uint32 startTime = editions[_editionId].startTime;
         uint32 endTime = editions[_editionId].endTime;
         uint32 presaleQuantity = editions[_editionId].presaleQuantity;
@@ -221,25 +228,32 @@ contract ArtistV2 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
             );
 
             // Check that the signature is valid.
-            require(getSigner(_signature, _editionId) == editions[_editionId].signerAddress, 'Invalid signer');
+            require(
+                getSigner(_signature, _editionId, _requestedTokenId) == editions[_editionId].signerAddress,
+                'Invalid signer'
+            );
         }
 
         // Don't allow purchases after the end time
         require(endTime > block.timestamp, 'Auction has ended');
 
-        // Create the token id by packing editionId in the top bits
-        uint256 tokenId = (_editionId << 128) | (numSold + 1);
+        // If presale, tokenId should be the one requested by the buyer
+        uint256 tokenId = _requestedTokenId;
+        if (tokenId == 0) {
+            //  if no _requestedTokenId set tokenId by packing editionId in the top bits
+            tokenId = (_editionId << 128) | newNumSold;
+        }
 
         // Send funds to the funding recipient.
         _sendFunds(editions[_editionId].fundingRecipient, msg.value);
 
         // Increment the number of tokens sold for this edition.
-        editions[_editionId].numSold++;
+        editions[_editionId].numSold = newNumSold;
 
         // Mint a new token for the sender, using the `tokenId`.
         _mint(msg.sender, tokenId);
 
-        emit EditionPurchased(_editionId, tokenId, editions[_editionId].numSold, msg.sender);
+        emit EditionPurchased(_editionId, tokenId, newNumSold, msg.sender);
     }
 
     function withdrawFunds(uint256 _editionId) external {
@@ -382,15 +396,25 @@ contract ArtistV2 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
     /// @param _editionId edition id
     /// @return address of signer
     /// @dev https://eips.ethereum.org/EIPS/eip-712
-    function getSigner(bytes calldata _signature, uint256 _editionId) private view returns (address) {
+    function getSigner(
+        bytes calldata _signature,
+        uint256 _editionId,
+        uint256 _requestedTokenId
+    ) private view returns (address) {
+        // check that the requested id is in the valid range for this edition
+        uint256 rangeStart = _editionId * 2**128;
+        uint256 rangeEnd = (_editionId + 1) * 2**128;
+        bool isValid = _requestedTokenId > rangeStart + editions[_editionId].quantity && _requestedTokenId < rangeEnd;
+
+        require(isValid == true, 'Invalid token id');
+
         bytes32 digest = keccak256(
             abi.encodePacked(
                 '\x19\x01',
                 keccak256(abi.encode(keccak256('EIP712Domain(uint256 chainId)'), block.chainid)),
-                keccak256(abi.encode(PRESALE_TYPEHASH, address(this), msg.sender, _editionId))
+                keccak256(abi.encode(PRESALE_TYPEHASH, address(this), msg.sender, _editionId, _requestedTokenId))
             )
         );
-        address recoveredAddress = digest.recover(_signature);
-        return recoveredAddress;
+        return digest.recover(_signature);
     }
 }
