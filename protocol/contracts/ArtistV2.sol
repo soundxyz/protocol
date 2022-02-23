@@ -64,12 +64,12 @@ contract ArtistV2 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
 
     string internal baseURI;
 
-    CountersUpgradeable.Counter private atTokenId; // DEPRECATED IN V3
+    CountersUpgradeable.Counter private atTokenId;
     CountersUpgradeable.Counter private atEditionId;
 
     // Mapping of edition id to descriptive data.
     mapping(uint256 => Edition) public editions;
-    // <DEPRECATED IN V3> Mapping of token id to edition id.
+    // Mapping of token id to edition id.
     mapping(uint256 => uint256) public tokenToEdition;
     // The amount of funds that have been deposited for a given edition.
     mapping(uint256 => uint256) public depositedForEdition;
@@ -223,9 +223,6 @@ contract ArtistV2 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
         // Don't allow purchases after the end time
         require(endTime > block.timestamp, 'Auction has ended');
 
-        // Create the token id by packing editionId in the top bits
-        uint256 tokenId = (_editionId << 128) | (numSold + 1);
-
         // Update the deposited total for the edition
         depositedForEdition[_editionId] += msg.value;
 
@@ -233,9 +230,14 @@ contract ArtistV2 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
         editions[_editionId].numSold++;
 
         // Mint a new token for the sender, using the `tokenId`.
-        _mint(msg.sender, tokenId);
+        _mint(msg.sender, atTokenId.current());
 
-        emit EditionPurchased(_editionId, tokenId, editions[_editionId].numSold, msg.sender);
+        // Store the mapping of token id to the edition being purchased.
+        tokenToEdition[atTokenId.current()] = _editionId;
+
+        emit EditionPurchased(_editionId, atTokenId.current(), editions[_editionId].numSold, msg.sender);
+
+        atTokenId.increment();
     }
 
     function withdrawFunds(uint256 _editionId) external {
@@ -265,16 +267,44 @@ contract ArtistV2 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
     function tokenURI(uint256 _tokenId) public view override returns (string memory) {
         require(_exists(_tokenId), 'ERC721Metadata: URI query for nonexistent token');
 
-        uint256 editionId = tokenToEditionView(_tokenId);
-
-        // Concatenate the compoents, baseURI, editionId and tokenId, to create URI.
-        return string(abi.encodePacked(baseURI, editionId.toString(), '/', _tokenId.toString()));
+        // Concatenate the components, baseURI, editionId and tokenId, to create URI.
+        return string(abi.encodePacked(baseURI, tokenToEdition[_tokenId].toString(), '/', _tokenId.toString()));
     }
 
     /// @notice Returns contract URI used by Opensea. e.g. https://sound.xyz/api/metadata/[artistId]/storefront
     function contractURI() public view returns (string memory) {
         // Concatenate the components, baseURI, editionId and tokenId, to create URI.
         return string(abi.encodePacked(baseURI, 'storefront'));
+    }
+
+    /// @notice Get token ids for a given edition id
+    /// @param _editionId edition id
+    function getTokenIdsOfEdition(uint256 _editionId) public view returns (uint256[] memory) {
+        uint256[] memory tokenIdsOfEdition = new uint256[](editions[_editionId].numSold);
+        uint256 index = 0;
+
+        for (uint256 id = 1; id < atTokenId.current(); id++) {
+            if (tokenToEdition[id] == _editionId) {
+                tokenIdsOfEdition[index] = id;
+                index++;
+            }
+        }
+        return tokenIdsOfEdition;
+    }
+
+    /// @notice Get owners of a given edition id
+    /// @param _editionId edition id
+    function getOwnersOfEdition(uint256 _editionId) public view returns (address[] memory) {
+        address[] memory ownersOfEdition = new address[](editions[_editionId].numSold);
+        uint256 index = 0;
+
+        for (uint256 id = 1; id < atTokenId.current(); id++) {
+            if (tokenToEdition[id] == _editionId) {
+                ownersOfEdition[index] = ERC721Upgradeable.ownerOf(id);
+                index++;
+            }
+        }
+        return ownersOfEdition;
     }
 
     /// @notice Get royalty information for token
@@ -286,7 +316,7 @@ contract ArtistV2 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
         override
         returns (address fundingRecipient, uint256 royaltyAmount)
     {
-        uint256 editionId = tokenToEditionView(_tokenId);
+        uint256 editionId = tokenToEdition[_tokenId];
         Edition memory edition = editions[editionId];
 
         if (edition.fundingRecipient == address(0x0)) {
@@ -300,11 +330,7 @@ contract ArtistV2 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
 
     /// @notice The total number of tokens created by this contract
     function totalSupply() external view returns (uint256) {
-        uint256 total = 0;
-        for (uint256 id = 1; id < atEditionId.current(); id++) {
-            total += editions[id].numSold;
-        }
-        return total;
+        return atTokenId.current() - 1; // because atTokenId is 1-indexed
     }
 
     /// @notice Informs other contracts which interfaces this contract supports
@@ -317,19 +343,6 @@ contract ArtistV2 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
     {
         return
             type(IERC2981Upgradeable).interfaceId == _interfaceId || ERC721Upgradeable.supportsInterface(_interfaceId);
-    }
-
-    function tokenToEditionView(uint256 _tokenId) public view returns (uint256) {
-        // Check the top bits to see if the edition id is there
-        uint256 editionId = _tokenId >> 128;
-
-        // If edition ID is 0, then this edition was created before the V3 upgrade
-        if (editionId == 0) {
-            // get edition ID from storage
-            editionId = tokenToEdition[_tokenId];
-        }
-
-        return editionId;
     }
 
     // ================================
