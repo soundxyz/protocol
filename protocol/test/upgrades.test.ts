@@ -11,6 +11,7 @@ import {
   EXAMPLE_ARTIST_NAME,
   EXAMPLE_ARTIST_SYMBOL,
   getRandomBN,
+  getTokenId,
   MAX_UINT32,
 } from './helpers';
 
@@ -265,7 +266,8 @@ describe('Upgrades', () => {
         const buy2Tx = await artistV2Proxy.connect(buyer).buyEdition(1, signature, { value: price });
         await buy2Tx.wait();
 
-        const royaltyInfo = await artistV2Proxy.royaltyInfo(2, saleAmount);
+        const tokenId2 = getTokenId(EDITION_ID, 2);
+        const royaltyInfo = await artistV2Proxy.royaltyInfo(tokenId2, saleAmount);
 
         const expectedRoyalty = saleAmount.mul(edition1Royalty).div(10_000);
 
