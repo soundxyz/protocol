@@ -457,12 +457,12 @@ function testArtistContract(deployContract: Function, name: string) {
       await setUpContract({ quantity: BigNumber.from(quantity) });
       const [_, ...buyers] = await ethers.getSigners();
 
-      for (let tokenCount = 1; tokenCount < quantity; tokenCount++) {
-        const currentBuyer = buyers[tokenCount];
-        await artist.connect(buyers[tokenCount]).buyEdition(EDITION_ID, EMPTY_SIGNATURE, {
+      for (let tokenSerialNum = 1; tokenSerialNum < quantity; tokenSerialNum++) {
+        const currentBuyer = buyers[tokenSerialNum];
+        await artist.connect(buyers[tokenSerialNum]).buyEdition(EDITION_ID, EMPTY_SIGNATURE, {
           value: price,
         });
-        const tokenId = getTokenId(EDITION_ID, tokenCount);
+        const tokenId = getTokenId(EDITION_ID, tokenSerialNum);
         const owner = await artist.ownerOf(tokenId);
         await expect(owner).to.eq(currentBuyer.address);
       }
@@ -486,21 +486,21 @@ function testArtistContract(deployContract: Function, name: string) {
     });
 
     it(`tokenURI returns expected string`, async () => {
-      const quantity = 5;
+      const quantity = 10;
       await setUpContract({ quantity: BigNumber.from(quantity), editionCount: 3 });
       const [_, ...buyers] = await ethers.getSigners();
       const editionId = 3;
 
-      for (let tokenCount = 1; tokenCount < quantity; tokenCount++) {
-        const currentBuyer = buyers[tokenCount];
+      for (let tokenSerialNum = 1; tokenSerialNum < quantity; tokenSerialNum++) {
+        const currentBuyer = buyers[tokenSerialNum % buyers.length];
 
         await artist.connect(currentBuyer).buyEdition(editionId, EMPTY_SIGNATURE, {
           value: price,
         });
 
-        const tokenId = getTokenId(editionId, tokenCount);
+        const tokenId = getTokenId(editionId, tokenSerialNum.toString());
         const resp = await artist.tokenURI(tokenId);
-        const tokenURI = `${BASE_URI}${EXAMPLE_ARTIST_ID}/${editionId}/${tokenId}`;
+        const tokenURI = `${BASE_URI}${EXAMPLE_ARTIST_ID}/${editionId}/${tokenSerialNum.toString()}`;
 
         await expect(resp).to.eq(tokenURI);
       }
