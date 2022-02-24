@@ -62,7 +62,7 @@ const allocations = [
   },
   // Kenyon Dixon
   {
-    ownerAddress: '0xb931872225b9dc7eA2cAc8B618C75CFAd5402243',
+    ownerAddress: '0xF1A8692992cFda464EEEbD9058Ba9077c7c5B7D4',
     percent: 1.02,
   },
   // Jordan Brooks
