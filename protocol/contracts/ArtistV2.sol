@@ -71,9 +71,9 @@ contract ArtistV2 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
     mapping(uint256 => Edition) public editions;
     // Mapping of token id to edition id.
     mapping(uint256 => uint256) public tokenToEdition;
-    // <DEPRECATED IN V3> The amount of funds that have been deposited for a given edition.
+    // The amount of funds that have been deposited for a given edition.
     mapping(uint256 => uint256) public depositedForEdition;
-    // <DEPRECATED IN V3> The amount of funds that have already been withdrawn for a given edition.
+    // The amount of funds that have already been withdrawn for a given edition.
     mapping(uint256 => uint256) public withdrawnForEdition;
     // The presale typehash (used for checking signature validity)
     bytes32 public constant PRESALE_TYPEHASH =
@@ -223,17 +223,17 @@ contract ArtistV2 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
         // Don't allow purchases after the end time
         require(endTime > block.timestamp, 'Auction has ended');
 
-        // Send funds to the funding recipient.
-        _sendFunds(editions[_editionId].fundingRecipient, msg.value);
+        // Update the deposited total for the edition
+        depositedForEdition[_editionId] += msg.value;
 
         // Increment the number of tokens sold for this edition.
         editions[_editionId].numSold++;
 
-        // Store the mapping of token id to the edition being purchased.
-        tokenToEdition[atTokenId.current()] = _editionId;
-
         // Mint a new token for the sender, using the `tokenId`.
         _mint(msg.sender, atTokenId.current());
+
+        // Store the mapping of token id to the edition being purchased.
+        tokenToEdition[atTokenId.current()] = _editionId;
 
         emit EditionPurchased(_editionId, atTokenId.current(), editions[_editionId].numSold, msg.sender);
 
