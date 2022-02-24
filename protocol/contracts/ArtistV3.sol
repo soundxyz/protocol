@@ -111,7 +111,7 @@ contract ArtistV3 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
     event PresaleQuantitySet(uint32 presaleQuantity);
 
     // ================================
-    // PUBLIC & EXTERNAL WRITABLE FUNCTIONS
+    // FUNCTIONS - PUBLIC & EXTERNAL
     // ================================
 
     /// @notice Initializes the contract
@@ -371,7 +371,7 @@ contract ArtistV3 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
     }
 
     // ================================
-    // PRIVATE FUNCTIONS
+    // FUNCTIONS - PRIVATE
     // ================================
 
     /// @notice Sends funds to an address
