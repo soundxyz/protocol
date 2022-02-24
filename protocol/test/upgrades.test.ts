@@ -13,6 +13,7 @@ import {
   getRandomBN,
   getTokenId,
   MAX_UINT32,
+  NULL_TOKEN_ID,
 } from './helpers';
 
 enum TimeType {
@@ -217,7 +218,7 @@ describe('Upgrades', () => {
 
         await upgradeArtistBeacon('ArtistV2');
 
-        const tx = await artistV1Proxy.buyEdition(EDITION_ID, EMPTY_SIGNATURE, { value: price });
+        const tx = await artistV1Proxy.buyEdition(EDITION_ID, EMPTY_SIGNATURE, NULL_TOKEN_ID, { value: price });
         const receipt = await tx.wait();
         const totalSupply = await artistV1Proxy.totalSupply();
 
@@ -252,18 +253,36 @@ describe('Upgrades', () => {
         const signers = await ethers.getSigners();
         const buyer = signers[10];
 
-        const signature = await getPresaleSignature({
+        const requestedTokenId1 = getTokenId(EDITION_ID, 1).toString();
+        const signature1 = await getPresaleSignature({
           chainId,
           provider,
           editionId: EDITION_ID,
+          requestedTokenId: requestedTokenId1,
           privateKey: process.env.ADMIN_PRIVATE_KEY,
           contractAddress: artistV2Proxy.address,
           buyerAddress: buyer.address,
         });
 
-        const buy1Tx = await artistV2Proxy.connect(buyer).buyEdition(1, signature, { value: price });
+        const buy1Tx = await artistV2Proxy
+          .connect(buyer)
+          .buyEdition(1, signature1, requestedTokenId1, { value: price });
         await buy1Tx.wait();
-        const buy2Tx = await artistV2Proxy.connect(buyer).buyEdition(1, signature, { value: price });
+
+        const requestedTokenId2 = getTokenId(EDITION_ID, 2).toString();
+        const signature2 = await getPresaleSignature({
+          chainId,
+          provider,
+          editionId: EDITION_ID,
+          requestedTokenId: requestedTokenId1,
+          privateKey: process.env.ADMIN_PRIVATE_KEY,
+          contractAddress: artistV2Proxy.address,
+          buyerAddress: buyer.address,
+        });
+
+        const buy2Tx = await artistV2Proxy
+          .connect(buyer)
+          .buyEdition(1, signature2, requestedTokenId2, { value: price });
         await buy2Tx.wait();
 
         const tokenId2 = getTokenId(EDITION_ID, 2);
@@ -407,7 +426,8 @@ describe('Upgrades', () => {
     );
     await editionTx.wait();
 
-    const tx = artistContract.buyEdition(EDITION_ID, EMPTY_SIGNATURE, { value: price });
+    const requestedTokenId = getTokenId(EDITION_ID, 1, quantity.toNumber()).toString();
+    const tx = artistContract.buyEdition(EDITION_ID, EMPTY_SIGNATURE, requestedTokenId, { value: price });
 
     await expect(tx).to.be.revertedWith('ECDSA: invalid signature');
   };
@@ -428,7 +448,7 @@ describe('Upgrades', () => {
     );
     await editionTx.wait();
 
-    const tx = await artistContract.buyEdition(EDITION_ID, EMPTY_SIGNATURE, { value: price });
+    const tx = await artistContract.buyEdition(EDITION_ID, EMPTY_SIGNATURE, NULL_TOKEN_ID, { value: price });
     const receipt = await tx.wait();
 
     expect(receipt.status).to.equal(1);
