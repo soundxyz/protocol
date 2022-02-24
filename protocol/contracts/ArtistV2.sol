@@ -106,12 +106,8 @@ contract ArtistV2 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
 
     event AuctionTimeSet(TimeType timeType, uint256 editionId, uint32 indexed newTime);
 
-    event SignerAddressSet(address indexed signerAddress);
-
-    event PresaleQuantitySet(uint32 presaleQuantity);
-
     // ================================
-    // PUBLIC & EXTERNAL WRITABLE FUNCTIONS
+    // FUNCTIONS - PUBLIC & EXTERNAL
     // ================================
 
     /// @notice Initializes the contract
@@ -267,27 +263,6 @@ contract ArtistV2 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
         emit AuctionTimeSet(TimeType.END, _editionId, _endTime);
     }
 
-    /// @notice Sets the signature address of an edition
-    function setSignerAddress(uint256 _editionId, address _newSignerAddress) external onlyOwner {
-        require(_newSignerAddress != address(0), 'Signer address cannot be 0');
-
-        editions[_editionId].signerAddress = _newSignerAddress;
-        emit SignerAddressSet(_newSignerAddress);
-    }
-
-    /// @notice Sets the presale quantity for an edition
-    function setPresaleQuantity(uint256 _editionId, uint32 _presaleQuantity) external onlyOwner {
-        // Check that the presale quantity is less than the total quantity
-        require(_presaleQuantity < editions[_editionId].quantity + 1, 'Must not exceed quantity');
-
-        editions[_editionId].presaleQuantity = _presaleQuantity;
-        emit PresaleQuantitySet(_presaleQuantity);
-    }
-
-    // ================================
-    // VIEW FUNCTIONS
-    // ================================
-
     /// @notice Returns token URI (metadata URL). e.g. https://sound.xyz/api/metadata/[artistId]/[editionId]/[tokenId]
     function tokenURI(uint256 _tokenId) public view override returns (string memory) {
         require(_exists(_tokenId), 'ERC721Metadata: URI query for nonexistent token');
@@ -371,7 +346,7 @@ contract ArtistV2 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
     }
 
     // ================================
-    // PRIVATE FUNCTIONS
+    // FUNCTIONS - PRIVATE
     // ================================
 
     /// @notice Sends funds to an address
