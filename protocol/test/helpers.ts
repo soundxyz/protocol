@@ -54,7 +54,7 @@ export const getRandomBN = (max?: number) => {
 };
 
 export const deployArtistImplementation = async (soundOwner: SignerWithAddress) => {
-  const Artist = await ethers.getContractFactory('ArtistV2');
+  const Artist = await ethers.getContractFactory('ArtistV3');
 
   const protoArtist = await Artist.deploy();
   await protoArtist.deployed();
