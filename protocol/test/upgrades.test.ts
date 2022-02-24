@@ -1,5 +1,5 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/dist/src/signers';
-import { helpers } from '@soundxyz/common';
+import { constants, helpers } from '@soundxyz/common';
 import { expect } from 'chai';
 import { BigNumber, Contract, utils } from 'ethers';
 import { ethers, upgrades, waffle } from 'hardhat';
@@ -11,9 +11,12 @@ import {
   EXAMPLE_ARTIST_NAME,
   EXAMPLE_ARTIST_SYMBOL,
   getRandomBN,
+  getTokenId,
   MAX_UINT32,
   NULL_ADDRESS,
 } from './helpers';
+
+const { baseURIs } = constants;
 
 enum TimeType {
   START = 0,
@@ -28,6 +31,7 @@ type CustomMintArgs = {
   editionCount?: number;
   royaltyBPS?: BigNumber;
   fundingRecipient?: SignerWithAddress;
+  version?: number;
 };
 
 const { provider } = waffle;
@@ -307,21 +311,93 @@ describe('Upgrades', () => {
         await openSalePurchaseTest(artistPostUpgradeProxy);
       });
     });
+  });
 
-    describe('v3 upgrade with new storage variables', () => {
-      it('pre-upgrade contracts return new data', async () => {
+  // ArtistV2 -> ArtistV3 TESTS
+
+  describe('ArtistV2.sol -> ArtistV3.sol', () => {
+    describe('Artist proxy deployed before upgrade', () => {
+      it('returns expected tokenURI', async () => {
+        const editionCount = 5;
+        await setUp({ editionCount });
+        await upgradeArtistImplementation('ArtistV3');
+        await tokenURITest(artistPreUpgradeProxy, editionCount);
+      });
+
+      it('returns expected totalSupply', async () => {
+        const editionCount = 5;
+        const tokenQuantity = 10;
+        await setUp({ editionCount });
+        await upgradeArtistImplementation('ArtistV3');
+        await totalSupplyTest(artistPreUpgradeProxy, editionCount, tokenQuantity);
+      });
+
+      it('returns expected edition id from tokenToEditionView', async () => {
+        const editionCount = 5;
+        const tokenQuantity = 10;
+        await setUp({ editionCount });
+
+        // Create and buy editions before upgrade
+        for (let currentEditionId = 1; currentEditionId <= editionCount; currentEditionId++) {
+          for (let tokenSerialNum = 1; tokenSerialNum <= tokenQuantity; tokenSerialNum++) {
+            // Buy token of edition
+            await artistPreUpgradeProxy.buyEdition(currentEditionId, { value: price });
+          }
+        }
+
+        // perform upgrade
+        await upgradeArtistImplementation('ArtistV3');
+
+        // Check data after upgrade
+        let tokenId = 0;
+        for (let currentEditionId = 1; currentEditionId <= editionCount; currentEditionId++) {
+          for (let tokenSerialNum = 1; tokenSerialNum <= tokenQuantity; tokenSerialNum++) {
+            tokenId++;
+
+            const editionId = await artistPreUpgradeProxy.tokenToEditionView(tokenId);
+
+            expect(editionId.toNumber()).to.equal(currentEditionId);
+          }
+        }
+      });
+    });
+
+    describe('Artist proxy deployed after upgrade', () => {
+      it('returns expected tokenURI', async () => {
+        const editionCount = 5;
+        await setUp({ editionCount });
+        await upgradeArtistImplementation('ArtistV3');
+        await tokenURITest(artistPostUpgradeProxy, editionCount, true);
+      });
+
+      it('returns expected totalSupply', async () => {
+        const editionCount = 5;
+        const tokenQuantity = 10;
+        await setUp({ editionCount });
+        await upgradeArtistImplementation('ArtistV3');
+        await totalSupplyTest(artistPostUpgradeProxy, editionCount, tokenQuantity, true);
+      });
+
+      it('returns expected edition id from tokenToEditionView', async () => {
+        const editionCount = 5;
+        const tokenQuantity = 10;
         await setUp();
-        await upgradeArtistImplementation('ArtistV2');
-        await upgradeArtistImplementation('ArtistV3Test');
+        await upgradeArtistImplementation('ArtistV3');
 
-        const SOME_NUMBER = 103979370;
-        const tx = await artistPreUpgradeProxy.setSomeNumber(SOME_NUMBER);
-        await tx.wait();
-        const someNumber = await artistPreUpgradeProxy.someNumber();
-        expect(someNumber).to.equal(SOME_NUMBER);
+        await createEditions(artistPostUpgradeProxy, editionCount, true);
 
-        const helloWorld = await artistPreUpgradeProxy.helloWorld();
-        expect(helloWorld).to.equal('hello world');
+        for (let currentEditionId = 1; currentEditionId <= editionCount; currentEditionId++) {
+          console.log({ currentEditionId });
+          for (let tokenSerialNum = 1; tokenSerialNum <= tokenQuantity; tokenSerialNum++) {
+            // Buy token of edition
+            await artistPostUpgradeProxy.buyEdition(currentEditionId, EMPTY_SIGNATURE, { value: price });
+
+            const tokenId = getTokenId(currentEditionId, tokenSerialNum);
+            const editionId = await artistPostUpgradeProxy.tokenToEditionView(tokenId);
+
+            expect(editionId.toNumber()).to.equal(currentEditionId);
+          }
+        }
       });
     });
   });
@@ -439,6 +515,40 @@ describe('Upgrades', () => {
     const receipt = await tx.wait();
 
     expect(receipt.status).to.equal(1);
+  };
+
+  const tokenURITest = async (artistContract: Contract, editionCount: number, isPostUpgradeProxy?: boolean) => {
+    for (let editionId; editionId < editionCount; editionId++) {
+      const tokenSerialNum = 1;
+
+      // Buy token of edition
+      await artistContract.buyEdition(editionId, EMPTY_SIGNATURE, { value: price });
+      const tokenId = isPostUpgradeProxy ? getTokenId(EDITION_ID, tokenSerialNum) : tokenSerialNum;
+      const tokenURI = await artistContract.tokenURI(tokenId);
+
+      expect(tokenURI).to.equal(`${baseURIs.hardhat}${EDITION_ID}/${tokenSerialNum}`);
+    }
+  };
+
+  const totalSupplyTest = async (
+    artistContract: Contract,
+    editionCount: number,
+    quantity: number,
+    isPostUpgradeProxy?: boolean
+  ) => {
+    if (isPostUpgradeProxy) {
+      await createEditions(artistContract, editionCount, true);
+    }
+
+    for (let editionId = 1; editionId <= editionCount; editionId++) {
+      for (let tokenSerialNum = 1; tokenSerialNum <= quantity; tokenSerialNum++) {
+        // Buy token of edition
+        await artistContract.buyEdition(editionId, EMPTY_SIGNATURE, { value: price });
+      }
+    }
+    const totalSupply = await artistContract.totalSupply();
+
+    expect(totalSupply.toNumber()).to.equal(editionCount * quantity);
   };
 
   const createEditions = async (artistContract: Contract, editionCount: number, postV2?: boolean) => {
