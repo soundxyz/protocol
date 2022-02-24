@@ -37,7 +37,7 @@ const allocations = [
   },
   // Jayla Darden
   {
-    ownerAddress: '0xD8df53D4DF42073287d7514b63717fa528468296',
+    ownerAddress: '0x1DB842C3Ddf37DDf88ee734C4B536A3fa3Db01A8',
     percent: 4.11,
   },
   // Esta
