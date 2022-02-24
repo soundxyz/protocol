@@ -1,6 +1,7 @@
 import './tasks/deploy-upgrade';
 import './tasks/get-beacon';
 import './tasks/nft-transfer';
+import './tasks/prep-split';
 import './tasks/set-admin';
 import './tasks/transfer-ownership';
 import './tasks/upgrade-beacon';
