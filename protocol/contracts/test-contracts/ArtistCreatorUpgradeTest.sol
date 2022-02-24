@@ -18,7 +18,7 @@ import '@openzeppelin/contracts/proxy/beacon/BeaconProxy.sol';
 import '@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol';
 import '../Artist.sol';
 
-contract ArtistCreatorV3Test is Initializable, UUPSUpgradeable, OwnableUpgradeable {
+contract ArtistCreatorUpgradeTest is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     using CountersUpgradeable for CountersUpgradeable.Counter;
     using ECDSAUpgradeable for bytes32;
 
