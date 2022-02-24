@@ -67,7 +67,7 @@ const allocations = [
   },
   // Jordan Brooks
   {
-    ownerAddress: '0x3d05f9Bc583E7BAC75332c16d1f04a1690EFF547',
+    ownerAddress: '0x2D4b6F807d68c1d32Bcd8372bf0D1F323e9CF1e0',
     percent: 0.61,
   },
   // Krs
