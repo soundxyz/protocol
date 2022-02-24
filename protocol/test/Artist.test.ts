@@ -919,4 +919,15 @@ function testArtistContract(deployContract: Function, name: string) {
       }
     });
   });
+
+  describe('editionCount', () => {
+    it('returns the correct number of editions', async () => {
+      const editionCount = 42;
+      await setUpContract({ editionCount });
+
+      const expectedCount = await artist.editionCount();
+
+      expect(editionCount).to.eq(expectedCount.toNumber());
+    });
+  });
 }
