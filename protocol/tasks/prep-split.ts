@@ -1,4 +1,4 @@
-import { BigNumber } from 'ethers';
+import { BigNumber, utils } from 'ethers';
 import { task } from 'hardhat/config';
 import { sortBy } from 'lodash';
 
@@ -97,12 +97,22 @@ const allocations = [
   },
 ];
 
+export const getHash: (arg0: string[], arg1: number[], arg2: number) => string = (
+  accounts,
+  percentAllocations,
+  distributorFee
+) => {
+  return utils.solidityKeccak256(['address[]', 'uint32[]', 'uint32'], [accounts, percentAllocations, distributorFee]);
+};
+
 task('prep-split', async (_args, _hardhat) => {
   const orderedAllocations = sortBy(allocations, (o) => o.ownerAddress.toLowerCase());
   const ownerAddresses = orderedAllocations.map((allocation) => allocation.ownerAddress.toLowerCase());
   const percentAllocations = orderedAllocations
     .map((allocation) => BigNumber.from(Math.round(PERCENTAGE_SCALE.toNumber() * +allocation.percent) / 100))
-    .map((allocation) => allocation.toString());
+    .map((allocation) => allocation.toNumber());
+
+  console.log('hash', getHash(ownerAddresses, percentAllocations, 0));
 
   console.log(JSON.stringify(ownerAddresses));
   console.log(JSON.stringify(percentAllocations));
