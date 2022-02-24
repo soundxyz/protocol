@@ -32,16 +32,16 @@ const deployArtistProxy = async (soundOwner: SignerWithAddress) => {
   await artistCreator.initialize();
   await artistCreator.deployed();
 
-  // Deploy ArtistV2 implementation
-  const ArtistV2 = await ethers.getContractFactory('ArtistV2');
+  // Deploy ArtistV3 implementation
+  const ArtistV3 = await ethers.getContractFactory('ArtistV3');
   const chainId = (await provider.getNetwork()).chainId;
-  const artistV2Impl = await ArtistV2.deploy();
-  await artistV2Impl.deployed();
+  const artistV3Impl = await ArtistV3.deploy();
+  await artistV3Impl.deployed();
 
-  // Upgrade beacon to point to ArtistV2 implementation
+  // Upgrade beacon to point to ArtistV3 implementation
   const beaconAddress = await artistCreator.beaconAddress();
   const beaconContract = await ethers.getContractAt('UpgradeableBeacon', beaconAddress, soundOwner);
-  const beaconTx = await beaconContract.upgradeTo(artistV2Impl.address);
+  const beaconTx = await beaconContract.upgradeTo(artistV3Impl.address);
   await beaconTx.wait();
 
   // Get sound.xyz signature to approve artist creation
@@ -56,7 +56,7 @@ const deployArtistProxy = async (soundOwner: SignerWithAddress) => {
   const receipt = await tx.wait();
   const contractAddress = receipt.events[3].args.artistAddress;
 
-  return ethers.getContractAt('ArtistV2', contractAddress);
+  return ethers.getContractAt('ArtistV3', contractAddress);
 };
 
 describe('Artist prototype', () => {
