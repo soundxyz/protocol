@@ -111,7 +111,7 @@ contract ArtistV3 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
     event PresaleQuantitySet(uint32 presaleQuantity);
 
     // ================================
-    // FUNCTIONS - PUBLIC & EXTERNAL
+    // PUBLIC & EXTERNAL WRITABLE FUNCTIONS
     // ================================
 
     /// @notice Initializes the contract
@@ -370,8 +370,13 @@ contract ArtistV3 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
             type(IERC2981Upgradeable).interfaceId == _interfaceId || ERC721Upgradeable.supportsInterface(_interfaceId);
     }
 
+    /// @notice returns the number of editions for this artist
+    function editionCount() external view returns (uint256) {
+        return atEditionId.current() - 1; // because atEditionId is incremented after each edition is created
+    }
+
     // ================================
-    // FUNCTIONS - PRIVATE
+    // PRIVATE FUNCTIONS
     // ================================
 
     /// @notice Sends funds to an address
