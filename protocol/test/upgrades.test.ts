@@ -2,6 +2,7 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/dist/src/signers';
 import { constants, helpers } from '@soundxyz/common';
 import { expect } from 'chai';
 import { BigNumber, Contract, utils } from 'ethers';
+import { parseUnits } from 'ethers/lib/utils';
 import { ethers, upgrades, waffle } from 'hardhat';
 
 import {
@@ -397,6 +398,42 @@ describe('Upgrades', () => {
             expect(editionId.toNumber()).to.equal(currentEditionId);
           }
         }
+      });
+    });
+  });
+
+  // ArtistV2 -> ArtistV3 TESTS
+
+  describe('ArtistV2.sol -> ArtistV3.sol', () => {
+    describe('Artist proxy deployed before upgrade', () => {
+      it('can withdraw ETH after upgrade', async () => {
+        await setUp();
+        const initialBalance = await provider.getBalance(fundingRecipient.address);
+
+        await artistPreUpgradeProxy.buyEdition(EDITION_ID, { value: price });
+
+        await upgradeArtistImplementation('ArtistV3');
+
+        await artistPreUpgradeProxy.withdrawFunds(EDITION_ID);
+
+        const postUpgradeBalance = await provider.getBalance(fundingRecipient.address);
+
+        expect(initialBalance.add(price).toString()).to.equal(postUpgradeBalance.toString());
+      });
+
+      it('sends ETH to funding recipient from buy edition transactions after upgrade', async () => {
+        await setUp();
+        const initialBalance = await provider.getBalance(fundingRecipient.address);
+
+        await upgradeArtistImplementation('ArtistV3');
+
+        const price = parseUnits('42');
+
+        await artistPreUpgradeProxy.buyEdition(EDITION_ID, EMPTY_SIGNATURE, { value: price });
+
+        const postBuyBalance = await provider.getBalance(fundingRecipient.address);
+
+        expect(initialBalance.add(price).toString()).to.equal(postBuyBalance.toString());
       });
     });
   });
