@@ -1,5 +1,11 @@
 # @soundxyz/protocol
 
+## 3.4.0
+
+### Minor Changes
+
+- 8f52145: Updates @soundxyz/protocol common package dependency
+
 ## 3.3.1
 
 ### Patch Changes
