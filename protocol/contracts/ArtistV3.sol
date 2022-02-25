@@ -71,7 +71,7 @@ contract ArtistV3 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
     mapping(uint256 => Edition) public editions;
     // <DEPRECATED IN V3> Mapping of token id to edition id.
     mapping(uint256 => uint256) private _tokenToEdition;
-    // The amount of funds that have been deposited for a given edition.
+    // <DEPRECATED IN V3> The amount of funds that have been deposited for a given edition.
     mapping(uint256 => uint256) public depositedForEdition;
     // <DEPRECATED IN V3> The amount of funds that have already been withdrawn for a given edition.
     mapping(uint256 => uint256) public withdrawnForEdition;
