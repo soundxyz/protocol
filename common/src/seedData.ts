@@ -323,22 +323,22 @@ export const creditSplits = [
       },
       {
         ownerAddress: usersData[1].publicAddress.toLowerCase(),
-        percent: 10,
+        percent: 2.05,
         roles: [CreditRole.ARTIST, CreditRole.PRODUCER, CreditRole.SONGWRITER],
       },
       {
         ownerAddress: usersData[2].publicAddress.toLowerCase(),
-        percent: 10,
+        percent: 17.95,
         roles: [CreditRole.ARTIST, CreditRole.PRODUCER, CreditRole.SONGWRITER],
       },
       {
         ownerAddress: usersData[3].publicAddress.toLowerCase(),
-        percent: 10,
+        percent: 5.03,
         roles: [CreditRole.PRODUCER, CreditRole.SONGWRITER],
       },
       {
         ownerAddress: usersData[4].publicAddress.toLowerCase(),
-        percent: 10,
+        percent: 4.97,
         roles: [CreditRole.PRODUCER, CreditRole.SONGWRITER],
       },
       {
