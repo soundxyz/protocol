@@ -332,7 +332,7 @@ describe('Upgrades', () => {
         await totalSupplyTest(artistPreUpgradeProxy, editionCount, tokenQuantity);
       });
 
-      it('returns expected edition id from tokenToEditionView', async () => {
+      it('returns expected edition id from tokenToEdition', async () => {
         const editionCount = 5;
         const tokenQuantity = 10;
         await setUp({ editionCount });
@@ -354,7 +354,7 @@ describe('Upgrades', () => {
           for (let tokenSerialNum = 1; tokenSerialNum <= tokenQuantity; tokenSerialNum++) {
             tokenId++;
 
-            const editionId = await artistPreUpgradeProxy.tokenToEditionView(tokenId);
+            const editionId = await artistPreUpgradeProxy.tokenToEdition(tokenId);
 
             expect(editionId.toNumber()).to.equal(currentEditionId);
           }
@@ -378,7 +378,7 @@ describe('Upgrades', () => {
         await totalSupplyTest(artistPostUpgradeProxy, editionCount, tokenQuantity, true);
       });
 
-      it('returns expected edition id from tokenToEditionView', async () => {
+      it('returns expected edition id from tokenToEdition', async () => {
         const editionCount = 5;
         const tokenQuantity = 10;
         await setUp();
@@ -387,13 +387,12 @@ describe('Upgrades', () => {
         await createEditions(artistPostUpgradeProxy, editionCount, true);
 
         for (let currentEditionId = 1; currentEditionId <= editionCount; currentEditionId++) {
-          console.log({ currentEditionId });
           for (let tokenSerialNum = 1; tokenSerialNum <= tokenQuantity; tokenSerialNum++) {
             // Buy token of edition
             await artistPostUpgradeProxy.buyEdition(currentEditionId, EMPTY_SIGNATURE, { value: price });
 
             const tokenId = getTokenId(currentEditionId, tokenSerialNum);
-            const editionId = await artistPostUpgradeProxy.tokenToEditionView(tokenId);
+            const editionId = await artistPostUpgradeProxy.tokenToEdition(tokenId);
 
             expect(editionId.toNumber()).to.equal(currentEditionId);
           }
