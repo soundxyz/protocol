@@ -1,5 +1,11 @@
 # @soundxyz/common
 
+## 2.3.0
+
+### Minor Changes
+
+- 879d7bb: More decimals in credit allocations seed data
+
 ## 2.2.0
 
 ### Minor Changes
