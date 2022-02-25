@@ -70,7 +70,7 @@ contract ArtistV3 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
     // Mapping of edition id to descriptive data.
     mapping(uint256 => Edition) public editions;
     // <DEPRECATED IN V3> Mapping of token id to edition id.
-    mapping(uint256 => uint256) public tokenToEdition;
+    mapping(uint256 => uint256) private _tokenToEdition;
     // The amount of funds that have been deposited for a given edition.
     mapping(uint256 => uint256) public depositedForEdition;
     // The amount of funds that have already been withdrawn for a given edition.
@@ -291,7 +291,7 @@ contract ArtistV3 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
     function tokenURI(uint256 _tokenId) public view override returns (string memory) {
         require(_exists(_tokenId), 'ERC721Metadata: URI query for nonexistent token');
 
-        uint256 editionId = tokenToEditionView(_tokenId);
+        uint256 editionId = tokenToEdition(_tokenId);
 
         // If _tokenId is less than 2**128, it's a pre-V3 upgrade token and we can simply append it to the URI
         if (_tokenId < 2**128) {
@@ -317,7 +317,7 @@ contract ArtistV3 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
         override
         returns (address fundingRecipient, uint256 royaltyAmount)
     {
-        uint256 editionId = tokenToEditionView(_tokenId);
+        uint256 editionId = tokenToEdition(_tokenId);
         Edition memory edition = editions[editionId];
 
         if (edition.fundingRecipient == address(0x0)) {
@@ -355,14 +355,14 @@ contract ArtistV3 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
         return atEditionId.current() - 1; // because atEditionId is incremented after each edition is created
     }
 
-    function tokenToEditionView(uint256 _tokenId) public view returns (uint256) {
+    function tokenToEdition(uint256 _tokenId) public view returns (uint256) {
         // Check the top bits to see if the edition id is there
         uint256 editionId = _tokenId >> 128;
 
         // If edition ID is 0, then this edition was created before the V3 upgrade
         if (editionId == 0) {
             // get edition ID from storage
-            editionId = tokenToEdition[_tokenId];
+            editionId = _tokenToEdition[_tokenId];
         }
 
         return editionId;
