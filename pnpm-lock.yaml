@@ -111,6 +111,7 @@ importers:
       ethers: ^5.4.7
       fs-extra: ^10.0.0
       hardhat: ^2.6.4
+      hardhat-contract-sizer: ^2.5.0
       hardhat-deploy: ^0.9.2
       hardhat-gas-reporter: ^1.0.4
       lodash: ^4.17.21
@@ -137,6 +138,7 @@ importers:
       ethereum-waffle: 3.4.0_typescript@4.5.5
       ethers: 5.5.4
       hardhat: 2.8.3
+      hardhat-contract-sizer: 2.5.0_hardhat@2.8.3
       hardhat-deploy: 0.9.29_hardhat@2.8.3
       hardhat-gas-reporter: 1.0.7_hardhat@2.8.3
       lodash: 4.17.21
@@ -1546,7 +1548,6 @@ packages:
   /ansi-regex/5.0.1:
     resolution: {integrity: sha512-quJQXlTSUGL2LH9SUXo8VwsY4soanhgo6LNSm84E1LBcE8s3O0wpdiRzyR9z/ZZJMlMWv37qOOb9pdJlMUEKFQ==}
     engines: {node: '>=8'}
-    dev: true
 
   /ansi-regex/6.0.1:
     resolution: {integrity: sha512-n5M855fKb2SsfMIiFFoVrABHJC8QtHwVx+mHWP3QcEqBHYienj5dHSgjbxtC0WEZXYt4wcD6zrQElDPhFuZgfA==}
@@ -2840,6 +2841,15 @@ packages:
       colors: 1.4.0
     dev: false
 
+  /cli-table3/0.6.1:
+    resolution: {integrity: sha512-w0q/enDHhPLq44ovMGdQeeDLvwxwavsJX7oQGYt/LrBlYsyaxyDnp6z3QzFut/6kLLKnlcUVJLrpB7KBfgG/RA==}
+    engines: {node: 10.* || >= 12.*}
+    dependencies:
+      string-width: 4.2.3
+    optionalDependencies:
+      colors: 1.4.0
+    dev: false
+
   /cli-truncate/2.1.0:
     resolution: {integrity: sha512-n8fOixwDD6b/ObinzTrp1ZKFzbgvKZvuz/TvejnLn1aQfC6r52XEx85FmuC+3HI+JM7coBRXUvNqEU2PHVrHpg==}
     engines: {node: '>=8'}
@@ -3539,7 +3549,6 @@ packages:
 
   /emoji-regex/8.0.0:
     resolution: {integrity: sha512-MSjYzcWNOA0ewAHpz0MxpYFvwg6yjy1NG3xteoqz644VCo/RPgnr1/GGt+ic3iJTzQ8Eu3TdM14SawnVUmGE6A==}
-    dev: true
 
   /emoji-regex/9.2.2:
     resolution: {integrity: sha512-L18DaJsXSUk2+42pv8mLs5jJT2hqFkFE4j21wOmgbUqsZ2hL72NsUU785g9RXgo3s0ZNgVl42TiHp3ZtOv/Vyg==}
@@ -5236,6 +5245,16 @@ packages:
     engines: {node: '>=6'}
     dev: true
 
+  /hardhat-contract-sizer/2.5.0_hardhat@2.8.3:
+    resolution: {integrity: sha512-579Bm3QjrGyInL4RuPFPV/2jLDekw+fGmeLQ85GeiBciIKPHVS3ZYuZJDrp7E9J6A4Czk+QVCRA9YPT2Svn7lQ==}
+    peerDependencies:
+      hardhat: ^2.0.0
+    dependencies:
+      chalk: 4.1.2
+      cli-table3: 0.6.1
+      hardhat: 2.8.3
+    dev: false
+
   /hardhat-deploy-ethers/0.3.0-beta.11_ethers@5.5.4+hardhat@2.8.3:
     resolution: {integrity: sha512-HnniBGBYsFRQDXBy3bQ27i86pQQnHkN0Mxdwiu869jZURY2gDQ4OEZxcXItnWQqBjYiEaavVyw/Xle7qwKOBAg==}
     peerDependencies:
@@ -5864,7 +5883,6 @@ packages:
   /is-fullwidth-code-point/3.0.0:
     resolution: {integrity: sha512-zymm5+u+sCsSWyD9qNaejV3DFvhCKclKdizYaJUuHA83RLjb7nSuGnddCHGv0hk+KY7BMAlsWeK4Ueg6EV6XQg==}
     engines: {node: '>=8'}
-    dev: true
 
   /is-fullwidth-code-point/4.0.0:
     resolution: {integrity: sha512-O4L094N2/dZ7xqVdrXhh9r1KODPJpFms8B5sGdJLPy664AgvXsreZUyCQQNItZRDlYug4xStLjNp/sz3HvBowQ==}
@@ -9068,7 +9086,6 @@ packages:
       emoji-regex: 8.0.0
       is-fullwidth-code-point: 3.0.0
       strip-ansi: 6.0.1
-    dev: true
 
   /string-width/5.1.0:
     resolution: {integrity: sha512-7x54QnN21P+XL/v8SuNKvfgsUre6PXpN7mc77N3HlZv+f1SBRGmjxtOud2Z6FZ8DmdkD/IdjCaf9XXbnqmTZGQ==}
@@ -9144,7 +9161,6 @@ packages:
     engines: {node: '>=8'}
     dependencies:
       ansi-regex: 5.0.1
-    dev: true
 
   /strip-ansi/7.0.1:
     resolution: {integrity: sha512-cXNxvT8dFNRVfhVME3JAe98mkXDYN2O1l7jmcwMnOslDeESg1rF/OZMtK0nRAhiari1unG5cD4jG3rapUAkLbw==}
