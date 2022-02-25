@@ -12,7 +12,8 @@ task('upgrade-beacon', 'Calls upgradeTo on an UpgradeableBeacon that points to A
 
     const beacon = await ethers.getContractAt('UpgradeableBeacon', beaconAddress, soundDeployer);
     const currentOwner = await beacon.owner();
-    console.log({ currentOwner });
+    const currentImplementation = await beacon.implementation();
+    console.log({ currentOwner, currentImplementation });
 
     if (currentOwner !== soundDeployer.address) {
       throw new Error(`The beacon is not owned by the deployer`);
@@ -22,7 +23,7 @@ task('upgrade-beacon', 'Calls upgradeTo on an UpgradeableBeacon that points to A
     await tx.wait();
 
     const expectedImplementation = await beacon.implementation();
-    if (expectedImplementation !== newImplementation) {
+    if (expectedImplementation.toLowerCase() !== newImplementation.toLowerCase()) {
       throw new Error(`The beacon implementation was not upgraded to ${newImplementation}`);
     } else {
       console.log(`Beacon implementation upgraded to ${newImplementation}`);

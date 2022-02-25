@@ -12,6 +12,7 @@ import '@nomiclabs/hardhat-solhint';
 import '@nomiclabs/hardhat-waffle';
 import '@openzeppelin/hardhat-upgrades';
 import '@typechain/hardhat';
+import 'hardhat-contract-sizer';
 import 'hardhat-deploy';
 import 'hardhat-gas-reporter';
 
@@ -23,7 +24,35 @@ dotenv.config();
 const config: HardhatUserConfig = {
   defaultNetwork: 'hardhat',
   solidity: {
-    compilers: [{ version: '0.8.0' }, { version: '0.8.2' }, { version: '0.8.4' }, { version: '0.8.7' }],
+    compilers: [
+      {
+        version: '0.8.7',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 200,
+          },
+        },
+      },
+      {
+        version: '0.8.4',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 200,
+          },
+        },
+      },
+      {
+        version: '0.5.17',
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 200,
+          },
+        },
+      },
+    ],
     settings: {
       // todo: turn on optimizer only when deploying to testnet or prod
       optimizer: {
@@ -56,14 +85,17 @@ const config: HardhatUserConfig = {
         mnemonic: process.env.MNEMONIC,
       },
     },
-    // mainnet: {
-    //   url: `https://eth-mainnet.alchemyapi.io/v2/${process.env.NEXT_PUBLIC_ALCHEMY_KEY}`,
-    //   accounts: [process.env.ADMIN_PRIVATE_KEY!],
-    // },
+    mainnet: {
+      url: `https://eth-mainnet.alchemyapi.io/v2/${process.env.NEXT_PUBLIC_ALCHEMY_KEY}`,
+      accounts: [process.env.ADMIN_PRIVATE_KEY!],
+    },
   },
   paths: {
     deployments: 'src/deployments',
     artifacts: 'src/artifacts',
+  },
+  etherscan: {
+    apiKey: process.env.ETHERSCAN_API_KEY,
   },
 };
 
