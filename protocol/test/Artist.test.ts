@@ -20,6 +20,7 @@ import {
   INVALID_PRIVATE_KEY,
   MAX_UINT32,
   NULL_ADDRESS,
+  NULL_TOKEN_ID,
 } from './helpers';
 
 const { getAuthSignature, getPresaleSignature } = commonHelpers;
@@ -33,16 +34,16 @@ const deployArtistProxy = async (soundOwner: SignerWithAddress) => {
   await artistCreator.initialize();
   await artistCreator.deployed();
 
-  // Deploy ArtistV3 implementation
-  const ArtistV3 = await ethers.getContractFactory('ArtistV3');
+  // Deploy ArtistV4 implementation
+  const ArtistV4 = await ethers.getContractFactory('ArtistV4');
   const chainId = (await provider.getNetwork()).chainId;
-  const artistV3Impl = await ArtistV3.deploy();
-  await artistV3Impl.deployed();
+  const artistV4Impl = await ArtistV4.deploy();
+  await artistV4Impl.deployed();
 
-  // Upgrade beacon to point to ArtistV3 implementation
+  // Upgrade beacon to point to ArtistV4 implementation
   const beaconAddress = await artistCreator.beaconAddress();
   const beaconContract = await ethers.getContractAt('UpgradeableBeacon', beaconAddress, soundOwner);
-  const beaconTx = await beaconContract.upgradeTo(artistV3Impl.address);
+  const beaconTx = await beaconContract.upgradeTo(artistV4Impl.address);
   await beaconTx.wait();
 
   // Get sound.xyz signature to approve artist creation
@@ -57,7 +58,7 @@ const deployArtistProxy = async (soundOwner: SignerWithAddress) => {
   const receipt = await tx.wait();
   const contractAddress = receipt.events[3].args.artistAddress;
 
-  return ethers.getContractAt('ArtistV3', contractAddress);
+  return ethers.getContractAt('ArtistV4', contractAddress);
 };
 
 describe('Artist prototype', () => {
@@ -258,7 +259,7 @@ function testArtistContract(deployContract: Function, name: string) {
     it(`reverts with "Edition does not exist" when expected`, async () => {
       await setUpContract();
       const [_, purchaser] = await ethers.getSigners();
-      const tx = artist.connect(purchaser).buyEdition('69420', EMPTY_SIGNATURE, {
+      const tx = artist.connect(purchaser).buyEdition('69420', EMPTY_SIGNATURE, NULL_TOKEN_ID, {
         value: price,
       });
       await expect(tx).to.be.revertedWith('Edition does not exist');
@@ -270,12 +271,12 @@ function testArtistContract(deployContract: Function, name: string) {
       const [_, ...buyers] = await ethers.getSigners();
 
       for (let i = 1; i <= quantity; i++) {
-        await artist.connect(buyers[i]).buyEdition(EDITION_ID, EMPTY_SIGNATURE, {
+        await artist.connect(buyers[i]).buyEdition(EDITION_ID, EMPTY_SIGNATURE, NULL_TOKEN_ID, {
           value: price,
         });
       }
 
-      const tx = artist.connect(buyers[quantity + 1]).buyEdition(EDITION_ID, EMPTY_SIGNATURE, {
+      const tx = artist.connect(buyers[quantity + 1]).buyEdition(EDITION_ID, EMPTY_SIGNATURE, NULL_TOKEN_ID, {
         value: price,
       });
       await expect(tx).to.be.revertedWith('This edition is already sold out');
@@ -287,36 +288,64 @@ function testArtistContract(deployContract: Function, name: string) {
         presaleQuantity: BigNumber.from(0),
       });
       const [_, purchaser] = await ethers.getSigners();
-      const tx = artist.connect(purchaser).buyEdition(EDITION_ID, EMPTY_SIGNATURE, {
+      const tx = artist.connect(purchaser).buyEdition(EDITION_ID, EMPTY_SIGNATURE, NULL_TOKEN_ID, {
         value: price,
       });
       await expect(tx).to.be.revertedWith(`No presale available & open auction not started`);
     });
 
-    it(`reverts if presale is sold out and open auction hasn't started`, async () => {
+    it(`reverts with "Invalid token id" if requested presale token id is not in valid range`, async () => {
       await setUpContract({
-        quantity: BigNumber.from(2),
+        startTime: BigNumber.from(currentSeconds() + 99999999),
+        presaleQuantity: BigNumber.from(1),
+      });
+      const [_, purchaser] = await ethers.getSigners();
+
+      const invalidTokenId = 420;
+      const tx = artist.connect(purchaser).buyEdition(EDITION_ID, EMPTY_SIGNATURE, invalidTokenId, {
+        value: price,
+      });
+      await expect(tx).to.be.revertedWith('Invalid token id');
+    });
+
+    it(`reverts if presale is sold out and open auction hasn't started`, async () => {
+      const quantity = 2;
+      await setUpContract({
+        quantity: BigNumber.from(quantity),
         presaleQuantity: BigNumber.from(1),
         startTime: BigNumber.from(currentSeconds() + 99999999),
       });
       const [_, buyer] = await ethers.getSigners();
       const chainId = (await provider.getNetwork()).chainId;
 
-      const presaleSignature = await getPresaleSignature({
+      const requestedTokenId1 = getTokenId(EDITION_ID, 1, quantity);
+      const presaleSignature1 = await getPresaleSignature({
         chainId,
         provider,
         editionId: EDITION_ID,
+        requestedTokenId: requestedTokenId1.toString(),
         privateKey: process.env.ADMIN_PRIVATE_KEY,
         contractAddress: artist.address,
         buyerAddress: buyer.address,
       });
 
-      const purchase1 = await artist.connect(buyer).buyEdition(EDITION_ID, presaleSignature, {
+      const purchase1 = await artist.connect(buyer).buyEdition(EDITION_ID, presaleSignature1, requestedTokenId1, {
         value: price,
       });
       await purchase1.wait();
 
-      const purchase2 = artist.connect(buyer).buyEdition(EDITION_ID, presaleSignature, {
+      const requestedTokenId2 = getTokenId(EDITION_ID, 1, quantity);
+      const presaleSignature2 = await getPresaleSignature({
+        chainId,
+        provider,
+        editionId: EDITION_ID,
+        requestedTokenId: requestedTokenId2.toString(),
+        privateKey: process.env.ADMIN_PRIVATE_KEY,
+        contractAddress: artist.address,
+        buyerAddress: buyer.address,
+      });
+
+      const purchase2 = artist.connect(buyer).buyEdition(EDITION_ID, presaleSignature2, requestedTokenId2, {
         value: price,
       });
 
@@ -326,20 +355,22 @@ function testArtistContract(deployContract: Function, name: string) {
     it(`reverts with "Auction has ended" when expected`, async () => {
       await setUpContract({ endTime: BigNumber.from(currentSeconds() - 1) });
       const [_, purchaser] = await ethers.getSigners();
-      const tx = artist.connect(purchaser).buyEdition(EDITION_ID, EMPTY_SIGNATURE, {
+      const tx = artist.connect(purchaser).buyEdition(EDITION_ID, EMPTY_SIGNATURE, NULL_TOKEN_ID, {
         value: price,
       });
       await expect(tx).to.be.revertedWith(`Auction has ended`);
     });
 
     it(`reverts if signature is invalid during presale`, async () => {
+      const quantity = 1;
       await setUpContract({
-        presaleQuantity: BigNumber.from(1),
-        quantity: BigNumber.from(1),
+        presaleQuantity: BigNumber.from(quantity),
+        quantity: BigNumber.from(quantity),
         startTime: BigNumber.from(currentSeconds() + 99999999),
       });
 
-      const tx = artist.buyEdition(EDITION_ID, EMPTY_SIGNATURE, {
+      const requestedTokenId = getTokenId(EDITION_ID, 1, quantity);
+      const tx = artist.buyEdition(EDITION_ID, EMPTY_SIGNATURE, requestedTokenId, {
         value: price,
       });
 
@@ -347,9 +378,10 @@ function testArtistContract(deployContract: Function, name: string) {
     });
 
     it(`reverts if signature is signed by wrong address during presale`, async () => {
+      const quantity = 1;
       await setUpContract({
-        presaleQuantity: BigNumber.from(1),
-        quantity: BigNumber.from(1),
+        presaleQuantity: BigNumber.from(quantity),
+        quantity: BigNumber.from(quantity),
         startTime: BigNumber.from(currentSeconds() + 99999999),
       });
 
@@ -357,16 +389,18 @@ function testArtistContract(deployContract: Function, name: string) {
       const signers = await ethers.getSigners();
       const buyer = signers[10];
 
+      const requestedTokenId = getTokenId(EDITION_ID, 1, quantity).toString();
       const presaleSignature = await getPresaleSignature({
         chainId,
         provider,
         editionId: EDITION_ID,
+        requestedTokenId,
         privateKey: INVALID_PRIVATE_KEY,
         contractAddress: artist.address,
         buyerAddress: buyer.address,
       });
 
-      const tx = artist.connect(buyer).buyEdition(EDITION_ID, presaleSignature, {
+      const tx = artist.connect(buyer).buyEdition(EDITION_ID, presaleSignature, requestedTokenId, {
         value: price,
       });
 
@@ -374,9 +408,10 @@ function testArtistContract(deployContract: Function, name: string) {
     });
 
     it(`reverts if signature is for the wrong edition during presale`, async () => {
+      const quantity = 1;
       await setUpContract({
-        presaleQuantity: BigNumber.from(1),
-        quantity: BigNumber.from(1),
+        presaleQuantity: BigNumber.from(quantity),
+        quantity: BigNumber.from(quantity),
         startTime: BigNumber.from(currentSeconds() + 99999999),
       });
 
@@ -384,16 +419,19 @@ function testArtistContract(deployContract: Function, name: string) {
       const signers = await ethers.getSigners();
       const buyer = signers[10];
 
+      const wrongEditionId = '666';
+      const requestedTokenId = getTokenId(EDITION_ID, 1, quantity).toString();
       const presaleSignature = await getPresaleSignature({
         chainId,
         provider,
-        editionId: '666',
+        editionId: wrongEditionId,
+        requestedTokenId,
         privateKey: process.env.ADMIN_PRIVATE_KEY,
         contractAddress: artist.address,
         buyerAddress: buyer.address,
       });
 
-      const tx = artist.connect(buyer).buyEdition(EDITION_ID, presaleSignature, {
+      const tx = artist.connect(buyer).buyEdition(EDITION_ID, presaleSignature, requestedTokenId, {
         value: price,
       });
 
@@ -411,7 +449,7 @@ function testArtistContract(deployContract: Function, name: string) {
       const signers = await ethers.getSigners();
       const buyer = signers[10];
 
-      const tx = await artist.connect(buyer).buyEdition(EDITION_ID, EMPTY_SIGNATURE, {
+      const tx = await artist.connect(buyer).buyEdition(EDITION_ID, EMPTY_SIGNATURE, NULL_TOKEN_ID, {
         value: price,
       });
       const receipt = await tx.wait();
@@ -422,7 +460,7 @@ function testArtistContract(deployContract: Function, name: string) {
     it(`creates an event log for the purchase`, async () => {
       await setUpContract();
       const [_, purchaser] = await ethers.getSigners();
-      const tx = await artist.connect(purchaser).buyEdition(EDITION_ID, EMPTY_SIGNATURE, {
+      const tx = await artist.connect(purchaser).buyEdition(EDITION_ID, EMPTY_SIGNATURE, NULL_TOKEN_ID, {
         value: price,
       });
       const receipt = await tx.wait();
@@ -444,7 +482,7 @@ function testArtistContract(deployContract: Function, name: string) {
       const [_, ...buyers] = await ethers.getSigners();
 
       for (let count = 1; count <= quantity; count++) {
-        await artist.connect(buyers[count]).buyEdition(EDITION_ID, EMPTY_SIGNATURE, {
+        await artist.connect(buyers[count]).buyEdition(EDITION_ID, EMPTY_SIGNATURE, NULL_TOKEN_ID, {
           value: price,
         });
         editionData = await artist.editions(EDITION_ID);
@@ -459,7 +497,7 @@ function testArtistContract(deployContract: Function, name: string) {
 
       for (let tokenSerialNum = 1; tokenSerialNum < quantity; tokenSerialNum++) {
         const currentBuyer = buyers[tokenSerialNum];
-        await artist.connect(buyers[tokenSerialNum]).buyEdition(EDITION_ID, EMPTY_SIGNATURE, {
+        await artist.connect(buyers[tokenSerialNum]).buyEdition(EDITION_ID, EMPTY_SIGNATURE, NULL_TOKEN_ID, {
           value: price,
         });
         const tokenId = getTokenId(EDITION_ID, tokenSerialNum);
@@ -478,7 +516,7 @@ function testArtistContract(deployContract: Function, name: string) {
       for (let count = 1; count <= quantity; count++) {
         const revenue = price.mul(count);
         const currentBuyer = buyers[count];
-        await artist.connect(currentBuyer).buyEdition(EDITION_ID, EMPTY_SIGNATURE, {
+        await artist.connect(currentBuyer).buyEdition(EDITION_ID, EMPTY_SIGNATURE, NULL_TOKEN_ID, {
           value: price,
         });
         const finalBalance = await provider.getBalance(fundingRecipient.address);
@@ -495,7 +533,7 @@ function testArtistContract(deployContract: Function, name: string) {
       for (let tokenSerialNum = 1; tokenSerialNum < quantity; tokenSerialNum++) {
         const currentBuyer = buyers[tokenSerialNum % buyers.length];
 
-        await artist.connect(currentBuyer).buyEdition(editionId, EMPTY_SIGNATURE, {
+        await artist.connect(currentBuyer).buyEdition(editionId, EMPTY_SIGNATURE, NULL_TOKEN_ID, {
           value: price,
         });
 
@@ -508,7 +546,8 @@ function testArtistContract(deployContract: Function, name: string) {
     });
 
     it(`allows purchase if no presale exists and quantity remains`, async () => {
-      await setUpContract({ quantity: BigNumber.from(1), presaleQuantity: BigNumber.from(0) });
+      const quantity = 1;
+      await setUpContract({ quantity: BigNumber.from(quantity), presaleQuantity: BigNumber.from(0) });
       const [_, buyer] = await ethers.getSigners();
       const chainId = (await provider.getNetwork()).chainId;
 
@@ -516,78 +555,92 @@ function testArtistContract(deployContract: Function, name: string) {
         chainId,
         provider,
         editionId: EDITION_ID,
+        requestedTokenId: getTokenId(EDITION_ID, 1, quantity).toString(),
         privateKey: process.env.ADMIN_PRIVATE_KEY,
         contractAddress: artist.address,
         buyerAddress: buyer.address,
       });
 
-      const tx = await artist.connect(buyer).buyEdition(EDITION_ID, signature, { value: price });
+      const tx = await artist.connect(buyer).buyEdition(EDITION_ID, signature, NULL_TOKEN_ID, { value: price });
       const receipt = await tx.wait();
 
       await expect(receipt.status).to.equal(1);
     });
 
     it(`allows purchase during presale`, async () => {
-      await setUpContract({ quantity: BigNumber.from(2), presaleQuantity: BigNumber.from(1) });
+      const quantity = 2;
+      await setUpContract({ quantity: BigNumber.from(quantity), presaleQuantity: BigNumber.from(1) });
       const [_, buyer] = await ethers.getSigners();
       const chainId = (await provider.getNetwork()).chainId;
 
+      const requestedTokenId = getTokenId(EDITION_ID, 1, quantity).toString();
       const signature = await getPresaleSignature({
         chainId,
         provider,
         editionId: EDITION_ID,
+        requestedTokenId,
         privateKey: process.env.ADMIN_PRIVATE_KEY,
         contractAddress: artist.address,
         buyerAddress: buyer.address,
       });
 
-      const tx = await artist.connect(buyer).buyEdition(EDITION_ID, signature, { value: price });
+      const tx = await artist.connect(buyer).buyEdition(EDITION_ID, signature, requestedTokenId, { value: price });
       const receipt = await tx.wait();
 
       await expect(receipt.status).to.equal(1);
     });
 
     it(`signature is ignored during the open/public sale`, async () => {
-      await setUpContract({ quantity: BigNumber.from(2), presaleQuantity: BigNumber.from(1) });
+      const quantity = 2;
+      await setUpContract({ quantity: BigNumber.from(quantity), presaleQuantity: BigNumber.from(1) });
       const [_, buyer] = await ethers.getSigners();
       const chainId = (await provider.getNetwork()).chainId;
 
+      const requestedTokenId = getTokenId(EDITION_ID, 1, quantity).toString();
       const signature = await getPresaleSignature({
         chainId,
         provider,
         editionId: EDITION_ID,
+        requestedTokenId,
         privateKey: process.env.ADMIN_PRIVATE_KEY,
         contractAddress: artist.address,
         buyerAddress: buyer.address,
       });
 
-      const purchase1 = await artist.connect(buyer).buyEdition(EDITION_ID, signature, { value: price });
+      const purchase1 = await artist
+        .connect(buyer)
+        .buyEdition(EDITION_ID, signature, requestedTokenId, { value: price });
       await purchase1.wait();
 
-      const purchase2 = await artist.buyEdition(EDITION_ID, EMPTY_SIGNATURE, { value: price });
+      const purchase2 = await artist.buyEdition(EDITION_ID, EMPTY_SIGNATURE, NULL_TOKEN_ID, { value: price });
       const purchase2Receipt = await purchase2.wait();
 
       await expect(purchase2Receipt.status).to.equal(1);
     });
 
     it(`allows purchase if presale is sold out but quantity remains`, async () => {
-      await setUpContract({ quantity: BigNumber.from(2), presaleQuantity: BigNumber.from(1) });
+      const quantity = 2;
+      await setUpContract({ quantity: BigNumber.from(quantity), presaleQuantity: BigNumber.from(1) });
       const [_, buyer] = await ethers.getSigners();
       const chainId = (await provider.getNetwork()).chainId;
 
+      const requestedTokenId = getTokenId(EDITION_ID, 1, quantity).toString();
       const signature = await getPresaleSignature({
         chainId,
         provider,
         editionId: EDITION_ID,
+        requestedTokenId,
         privateKey: process.env.ADMIN_PRIVATE_KEY,
         contractAddress: artist.address,
         buyerAddress: buyer.address,
       });
 
-      const purchase1 = await artist.connect(buyer).buyEdition(EDITION_ID, signature, { value: price });
+      const purchase1 = await artist
+        .connect(buyer)
+        .buyEdition(EDITION_ID, signature, requestedTokenId, { value: price });
       await purchase1.wait();
 
-      const purchase2 = await artist.buyEdition(EDITION_ID, signature, { value: price });
+      const purchase2 = await artist.buyEdition(EDITION_ID, signature, NULL_TOKEN_ID, { value: price });
       const purchase2Receipt = await purchase2.wait();
 
       await expect(purchase2Receipt.status).to.equal(1);
@@ -599,12 +652,12 @@ function testArtistContract(deployContract: Function, name: string) {
       const quantity = 10;
       await setUpContract({ quantity: BigNumber.from(quantity) });
 
-      const [soundOwner, artistEOA, fundingRecipient, ...buyers] = await ethers.getSigners();
+      const [soundOwner, _, fundingRecipient, ...buyers] = await ethers.getSigners();
       const originalRecipientBalance = await provider.getBalance(fundingRecipient.address);
 
       for (let count = 1; count <= quantity; count++) {
         const currentBuyer = buyers[count];
-        await artist.connect(currentBuyer).buyEdition(EDITION_ID, EMPTY_SIGNATURE, {
+        await artist.connect(currentBuyer).buyEdition(EDITION_ID, EMPTY_SIGNATURE, NULL_TOKEN_ID, {
           value: price,
         });
       }
@@ -782,7 +835,7 @@ function testArtistContract(deployContract: Function, name: string) {
       await setUpContract();
       const [_, receiver, buyer] = await ethers.getSigners();
 
-      await artist.connect(buyer).buyEdition(EDITION_ID, EMPTY_SIGNATURE, {
+      await artist.connect(buyer).buyEdition(EDITION_ID, EMPTY_SIGNATURE, NULL_TOKEN_ID, {
         value: price,
       });
 
@@ -798,7 +851,7 @@ function testArtistContract(deployContract: Function, name: string) {
       await setUpContract();
       const [_, receiver, buyer] = await ethers.getSigners();
 
-      await artist.connect(buyer).buyEdition(EDITION_ID, EMPTY_SIGNATURE, {
+      await artist.connect(buyer).buyEdition(EDITION_ID, EMPTY_SIGNATURE, NULL_TOKEN_ID, {
         value: price,
       });
 
@@ -813,7 +866,7 @@ function testArtistContract(deployContract: Function, name: string) {
       const [_, receiver, buyer] = await ethers.getSigners();
       const TOKEN_COUNT = '1';
 
-      await artist.connect(buyer).buyEdition(EDITION_ID, EMPTY_SIGNATURE, {
+      await artist.connect(buyer).buyEdition(EDITION_ID, EMPTY_SIGNATURE, NULL_TOKEN_ID, {
         value: price,
       });
 
@@ -842,7 +895,7 @@ function testArtistContract(deployContract: Function, name: string) {
       for (let tokenId = 1; tokenId <= totalQuantity; tokenId++) {
         let currentEditionId = (tokenId % editionCount) + 1; // loops through editions
         const currentBuyer = buyers[tokenId % buyers.length];
-        await artist.connect(currentBuyer).buyEdition(currentEditionId, EMPTY_SIGNATURE, {
+        await artist.connect(currentBuyer).buyEdition(currentEditionId, EMPTY_SIGNATURE, NULL_TOKEN_ID, {
           value: price,
         });
         const totalSupply = await artist.totalSupply();
@@ -864,17 +917,20 @@ function testArtistContract(deployContract: Function, name: string) {
         const fundingRecipient = signers[i + 1];
         const royalty = BigNumber.from(getRandomInt(1, 10_000));
         const secondarySalePrice = ethers.utils.parseEther(getRandomBN().toString());
+
+        const requestedTokenId = getTokenId(editionId, i).toString();
         const signature = await getPresaleSignature({
           chainId,
           provider,
           editionId: EDITION_ID,
+          requestedTokenId,
           privateKey: process.env.ADMIN_PRIVATE_KEY,
           contractAddress: artist.address,
           buyerAddress: currentBuyer.address,
         });
 
         await setUpContract({ royaltyBPS: BigNumber.from(royalty), fundingRecipient, editionCount: i });
-        const tx = await artist.connect(currentBuyer).buyEdition(editionId, signature, {
+        const tx = await artist.connect(currentBuyer).buyEdition(editionId, signature, requestedTokenId, {
           value: price,
         });
         await tx.wait();

@@ -37,6 +37,7 @@ type PresaleWhiteListArgs = {
   contractAddress: string;
   buyerAddress: string;
   editionId: string;
+  requestedTokenId: string;
   privateKey: string;
   provider: Provider;
 };
@@ -48,6 +49,7 @@ export async function getPresaleSignature({
   editionId,
   privateKey,
   provider,
+  requestedTokenId,
 }: PresaleWhiteListArgs) {
   const wallet = new Wallet(privateKey, provider);
 
@@ -63,6 +65,8 @@ export async function getPresaleSignature({
       { name: 'buyerAddress', type: 'address' },
       // Needed to prevent reuse of signature from another edition
       { name: 'editionId', type: 'uint256' },
+      // Needed to prevent multiple purchases from the same address
+      { name: 'requestedTokenId', type: 'uint256' },
     ],
   };
 
@@ -70,6 +74,7 @@ export async function getPresaleSignature({
     contractAddress: contractAddress.toLowerCase(),
     buyerAddress,
     editionId,
+    requestedTokenId,
   });
 
   return signature;
