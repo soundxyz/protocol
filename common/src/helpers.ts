@@ -1,4 +1,7 @@
+import { BigNumber } from '@ethersproject/bignumber';
+import { JsonRpcProvider } from '@ethersproject/providers';
 import { Wallet } from '@ethersproject/wallet';
+import { ArtistV2__factory } from '@soundxyz/protocol/typechain';
 
 import type { Provider } from '@ethersproject/providers';
 
@@ -9,6 +12,18 @@ type CreateArtistWhiteListArgs = {
   provider: Provider;
 };
 
+type PresaleWhiteListArgs = {
+  chainId: number;
+  contractAddress: string;
+  buyerAddress: string;
+  editionId: string;
+  privateKey: string;
+  provider: Provider;
+};
+
+/**
+ * Generates auth signature for deploying artist contract
+ */
 export async function getAuthSignature({
   chainId,
   deployerAddress,
@@ -32,15 +47,9 @@ export async function getAuthSignature({
   return signature;
 }
 
-type PresaleWhiteListArgs = {
-  chainId: number;
-  contractAddress: string;
-  buyerAddress: string;
-  editionId: string;
-  privateKey: string;
-  provider: Provider;
-};
-
+/**
+ * Generates auth signature for buying a presale edition
+ */
 export async function getPresaleSignature({
   chainId,
   contractAddress,
@@ -74,3 +83,34 @@ export async function getPresaleSignature({
 
   return signature;
 }
+
+/**
+ * Gets current on-chain NFT data for an edition by querying the event logs
+ * @param contractAddress Artist contract address
+ * @param editionId edition id
+ * @param provider blockchain provider
+ */
+export async function getTokensOfEdition(
+  contractAddress: string,
+  editionId: string,
+  provider: Provider,
+) {
+  const artistContract = ArtistV2__factory.connect(contractAddress, provider);
+  const editionPurchasedFilter = artistContract.filters.EditionPurchased(BigNumber.from(editionId));
+  const events = await artistContract.queryFilter(editionPurchasedFilter, 0, 'latest');
+
+  return events;
+}
+
+const provider = new JsonRpcProvider(
+  `https://eth-mainnet.alchemyapi.io/v2/${process.env.NEXT_PUBLIC_ALCHEMY_KEY}`,
+);
+
+(async () => {
+  const tokenData = await getTokensOfEdition(
+    '0x3bF96aFe2291D76f2934350624080fAefEec9a46',
+    '1',
+    provider,
+  );
+  console.log(tokenData);
+})();
