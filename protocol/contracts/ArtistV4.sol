@@ -163,13 +163,11 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
     ) external onlyOwner {
         // Presale checks
         if (_presaleQuantity > 0) {
+            // Presale quantity can't exceed total quantity
             require(_presaleQuantity < _quantity + 1, 'Presale quantity too big');
 
+            // Must provide signer address if setting a presale quantity
             require(_signerAddress != address(0), 'Signer address cannot be 0');
-
-            // This check ensures there is room in this edition's range for the presale tokens
-            // Using quantity as the lower bound so we're always guaranteed to have enough room for the presale tokens
-            require(_quantity < 2**64, 'Quantity must be less than 2**64');
         }
 
         editions[atEditionId.current()] = Edition({
