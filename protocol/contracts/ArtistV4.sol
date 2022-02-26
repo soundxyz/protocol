@@ -165,6 +165,10 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
 
         if (_presaleQuantity > 0) {
             require(_signerAddress != address(0), 'Signer address cannot be 0');
+
+            // This check ensures there is room in this edition's range for the presale tokens
+            // Using quantity as the lower bound so we're always guaranteed to have enough room for the presale tokens
+            require(_quantity < 2**64, 'Quantity must be less than 2**64');
         }
 
         editions[atEditionId.current()] = Edition({
@@ -416,6 +420,7 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
         uint256 _requestedTokenId
     ) private view returns (address) {
         // check that the requested id is in the valid range for this edition
+        // Using quantity as the lower bound so we're always guaranteed to have enough room for the presale tokens
         uint256 rangeStart = _editionId * 2**128;
         uint256 rangeEnd = (_editionId + 1) * 2**128;
         bool isValid = _requestedTokenId > rangeStart + editions[_editionId].quantity && _requestedTokenId < rangeEnd;
