@@ -161,9 +161,10 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
         uint32 _presaleQuantity,
         address _signerAddress
     ) external onlyOwner {
-        require(_presaleQuantity < _quantity + 1, 'Presale quantity too big');
-
+        // Presale checks
         if (_presaleQuantity > 0) {
+            require(_presaleQuantity < _quantity + 1, 'Presale quantity too big');
+
             require(_signerAddress != address(0), 'Signer address cannot be 0');
 
             // This check ensures there is room in this edition's range for the presale tokens
@@ -421,9 +422,9 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
     ) private view returns (address) {
         // check that the requested id is in the valid range for this edition
         // Using quantity as the lower bound so we're always guaranteed to have enough room for the presale tokens
-        uint256 rangeStart = _editionId * 2**128;
+        uint256 rangeStart = (_editionId * 2**128) + editions[_editionId].quantity + 1;
         uint256 rangeEnd = (_editionId + 1) * 2**128;
-        bool isValid = _requestedTokenId > rangeStart + editions[_editionId].quantity && _requestedTokenId < rangeEnd;
+        bool isValid = _requestedTokenId > rangeStart && _requestedTokenId < rangeEnd;
 
         require(isValid == true, 'Invalid token id');
 

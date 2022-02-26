@@ -37,7 +37,7 @@ type PresaleWhiteListArgs = {
   contractAddress: string;
   buyerAddress: string;
   editionId: string;
-  requestedTokenId: string;
+  requestedTokenId?: string;
   privateKey: string;
   provider: Provider;
 };
@@ -57,25 +57,33 @@ export async function getPresaleSignature({
     chainId,
   };
 
-  const types = {
-    EditionInfo: [
-      // Needed to prevent reuse of signature from another artist contract
-      { name: 'contractAddress', type: 'address' },
-      // Needed to prevent reuse of signature from another buyer
-      { name: 'buyerAddress', type: 'address' },
-      // Needed to prevent reuse of signature from another edition
-      { name: 'editionId', type: 'uint256' },
+  const EditionInfo = [
+    // Needed to prevent reuse of signature from another artist contract
+    { name: 'contractAddress', type: 'address' },
+    // Needed to prevent reuse of signature from another buyer
+    { name: 'buyerAddress', type: 'address' },
+    // Needed to prevent reuse of signature from another edition
+    { name: 'editionId', type: 'uint256' },
+  ];
+
+  // only include requested token id if it is not undefined
+  if (requestedTokenId) {
+    EditionInfo.push(
       // Needed to prevent multiple purchases from the same address
       { name: 'requestedTokenId', type: 'uint256' },
-    ],
-  };
+    );
+  }
 
-  const signature = await wallet._signTypedData(domainSeparator, types, {
-    contractAddress: contractAddress.toLowerCase(),
-    buyerAddress,
-    editionId,
-    requestedTokenId,
-  });
+  const signature = await wallet._signTypedData(
+    domainSeparator,
+    { EditionInfo },
+    {
+      contractAddress: contractAddress.toLowerCase(),
+      buyerAddress,
+      editionId,
+      requestedTokenId,
+    },
+  );
 
   return signature;
 }
