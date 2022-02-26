@@ -230,11 +230,11 @@ contract ArtistV3 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
         // Create the token id by packing editionId in the top bits
         uint256 tokenId = (_editionId << 128) | (numSold + 1);
 
-        // Send funds to the funding recipient.
-        _sendFunds(editions[_editionId].fundingRecipient, msg.value);
-
         // Increment the number of tokens sold for this edition.
         editions[_editionId].numSold++;
+
+        // Send funds to the funding recipient.
+        _sendFunds(editions[_editionId].fundingRecipient, msg.value);
 
         // Mint a new token for the sender, using the `tokenId`.
         _mint(msg.sender, tokenId);
