@@ -1,5 +1,11 @@
 # @soundxyz/protocol
 
+## 3.4.1
+
+### Patch Changes
+
+- 62d59dd: Comments out mainnet in hardhat.config
+
 ## 3.4.0
 
 ### Minor Changes
