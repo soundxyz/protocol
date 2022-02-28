@@ -920,5 +920,22 @@ function testArtistContract(deployContract: Function, name: string) {
       const actualOwners = await artist.ownersOfTokenIds(tokenIds);
       await expect(expectedOwners).to.deep.eq(actualOwners);
     });
+
+    it('reverts when passed a nonexistent token', async () => {
+      await setUpContract();
+      const [_, buyer] = await ethers.getSigners();
+
+      const tokenIds = [];
+      const expectedOwners = [];
+      await artist.connect(buyer).buyEdition(EDITION_ID, EMPTY_SIGNATURE, {
+        value: price,
+      });
+      const expectedTokenId = getTokenId(EDITION_ID, 1);
+      expectedOwners.push(buyer.address);
+      tokenIds.push(expectedTokenId.add(69));
+
+      const ownersResponse = artist.ownersOfTokenIds(tokenIds);
+      await expect(ownersResponse).to.be.revertedWith('ERC721: owner query for nonexistent token');
+    });
   });
 }
