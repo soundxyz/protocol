@@ -896,4 +896,29 @@ function testArtistContract(deployContract: Function, name: string) {
       expect(editionCount).to.eq(expectedCount.toNumber());
     });
   });
+
+  describe('ownersOfTokenIds', () => {
+    it('returns the correct list of owners', async () => {
+      const editionQuantity = 10;
+      const editionCount = 3;
+      await setUpContract({ editionCount, quantity: BigNumber.from(10) });
+      const [_, ...buyers] = await ethers.getSigners();
+
+      const tokenIds = [];
+      const expectedOwners = [];
+      for (let editionId = 1; editionId <= editionCount; editionId++) {
+        for (let serialNum = 1; serialNum <= editionQuantity; serialNum++) {
+          const currentBuyer = buyers[serialNum % buyers.length]; // loops over buyers
+          await artist.connect(currentBuyer).buyEdition(editionId, EMPTY_SIGNATURE, {
+            value: price,
+          });
+          const expectedTokenId = getTokenId(editionId, serialNum);
+          expectedOwners.push(currentBuyer.address);
+          tokenIds.push(expectedTokenId);
+        }
+      }
+      const actualOwners = await artist.ownersOfTokenIds(tokenIds);
+      await expect(expectedOwners).to.deep.eq(actualOwners);
+    });
+  });
 }
