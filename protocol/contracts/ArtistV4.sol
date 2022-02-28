@@ -17,6 +17,8 @@ import {CountersUpgradeable} from '@openzeppelin/contracts-upgradeable/utils/Cou
 import {ArtistCreator} from './ArtistCreator.sol';
 import {ECDSA} from '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
 
+import 'hardhat/console.sol';
+
 /// @title Artist
 /// @author SoundXYZ - @gigamesh & @vigneshka
 /// @notice This contract is used to create & sell song NFTs for the artist who owns the contract.
@@ -429,17 +431,16 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
         uint256 _editionId,
         uint256 _ticketNumber
     ) private returns (address) {
-        // check that the ticket number is in the range for this edition
-        require(_ticketNumber < ticketNumbers[_editionId].length * 256, 'Invalid ticket number');
-
         // gets the index of the array of MAX_INT bit arrays
         uint256 offset = _ticketNumber / 256;
+        // check that the ticket number is in the range for this edition
+        require(offset < ticketNumbers[_editionId].length, 'Ticket number too large');
         // gets the offset within the MAX_INT bit array
         uint256 offsetWithin256 = _ticketNumber % 256;
         // gets the stored bit
         uint256 storedBit = (ticketNumbers[_editionId][offset] >> offsetWithin256) & uint256(1);
         // check that the ticket number  hasn't already been claimed
-        require(storedBit == 1, 'NFT already claimed');
+        require(storedBit == 1, 'Invalid ticket number or NFT already claimed');
 
         ticketNumbers[_editionId][offset] = ticketNumbers[_editionId][offset] & ~(uint256(1) << offsetWithin256);
 
