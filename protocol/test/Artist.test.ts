@@ -193,6 +193,8 @@ function testArtistContract(deployContract: Function, name: string) {
       await setUpContract({ editionCount: 2 });
       const edition = await artist.editions(EDITION_ID);
 
+      console.log(edition);
+
       await expect(edition.fundingRecipient).to.eq(fundingRecipient.address);
       await expect(edition.numSold.toString()).to.eq('0');
       await expect(edition.quantity).to.eq(quantity);

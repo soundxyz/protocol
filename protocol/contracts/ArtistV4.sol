@@ -80,6 +80,10 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
         keccak256(
             'EditionInfo(address contractAddress,address buyerAddress,uint256 editionId,uint256 requestedTokenId)'
         );
+    uint256 private constant MAX_INT = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
+    // editionId -> bit arrays to track which tokens have been claimed
+    // set to fixed size of 1000 to appease the compiler (large number does not require more gas)
+    mapping(uint256 => uint256[1000]) ticketNumbers;
 
     // ================================
     // EVENTS
@@ -170,7 +174,18 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
             require(_signerAddress != address(0), 'Signer address cannot be 0');
         }
 
-        editions[atEditionId.current()] = Edition({
+        uint256 currentEditionId = atEditionId.current();
+
+        uint256[1000] memory ticketNumberArray;
+
+        if (_presaleQuantity > 0) {
+            uint256 arrayLength = (_presaleQuantity / 256) + 1;
+            for (uint256 i = 0; i < arrayLength; i++) {
+                ticketNumberArray[i] = MAX_INT;
+            }
+        }
+
+        editions[currentEditionId] = Edition({
             fundingRecipient: _fundingRecipient,
             price: _price,
             numSold: 0,
@@ -179,11 +194,12 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
             startTime: _startTime,
             endTime: _endTime,
             presaleQuantity: _presaleQuantity,
-            signerAddress: _signerAddress
+            signerAddress: _signerAddress,
+            ticketNumberArray: ticketNumberArray
         });
 
         emit EditionCreated(
-            atEditionId.current(),
+            currentEditionId,
             _fundingRecipient,
             _price,
             _quantity,
