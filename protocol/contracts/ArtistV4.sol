@@ -77,12 +77,10 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
     mapping(uint256 => uint256) public withdrawnForEdition;
     // The presale typehash (used for checking signature validity)
     bytes32 public constant PRESALE_TYPEHASH =
-        keccak256(
-            'EditionInfo(address contractAddress,address buyerAddress,uint256 editionId,uint256 requestedTokenId)'
-        );
+        keccak256('EditionInfo(address contractAddress,address buyerAddress,uint256 editionId,uint256 ticketNumber)');
     uint256 private constant MAX_INT = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
     // editionId -> bit arrays to track which tokens have been claimed
-    // set to fixed size of 1000 to appease the compiler (large number does not require more gas)
+    // set to fixed size of 1000 for efficiency (large number does not require more gas)
     mapping(uint256 => uint256[1000]) ticketNumbers;
 
     // ================================
@@ -176,12 +174,10 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
 
         uint256 currentEditionId = atEditionId.current();
 
-        uint256[1000] memory ticketNumberArray;
-
         if (_presaleQuantity > 0) {
             uint256 arrayLength = (_presaleQuantity / 256) + 1;
             for (uint256 i = 0; i < arrayLength; i++) {
-                ticketNumberArray[i] = MAX_INT;
+                ticketNumbers[currentEditionId][i] = MAX_INT;
             }
         }
 
@@ -194,8 +190,7 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
             startTime: _startTime,
             endTime: _endTime,
             presaleQuantity: _presaleQuantity,
-            signerAddress: _signerAddress,
-            ticketNumberArray: ticketNumberArray
+            signerAddress: _signerAddress
         });
 
         emit EditionCreated(
@@ -219,7 +214,7 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
     function buyEdition(
         uint256 _editionId,
         bytes calldata _signature,
-        uint256 _requestedTokenId
+        uint256 _ticketNumber
     ) external payable {
         // Caching variables locally to reduce reads
         uint256 price = editions[_editionId].price;
@@ -248,7 +243,7 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
 
             // Check that the signature is valid.
             require(
-                getSigner(_signature, _editionId, _requestedTokenId) == editions[_editionId].signerAddress,
+                getSigner(_signature, _editionId, _ticketNumber) == editions[_editionId].signerAddress,
                 'Invalid signer'
             );
         }
@@ -432,21 +427,27 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
     function getSigner(
         bytes calldata _signature,
         uint256 _editionId,
-        uint256 _requestedTokenId
-    ) private view returns (address) {
-        // check that the requested id is in the valid range for this edition
-        // Using quantity as the lower bound so we're always guaranteed to have enough room for the presale tokens
-        uint256 rangeStart = (_editionId * 2**128) + editions[_editionId].quantity + 1;
-        uint256 rangeEnd = (_editionId + 1) * 2**128;
-        bool isValid = _requestedTokenId > rangeStart && _requestedTokenId < rangeEnd;
+        uint256 _ticketNumber
+    ) private returns (address) {
+        // check that the ticket number is in the range for this edition
+        require(_ticketNumber < ticketNumbers[_editionId].length * 256, 'Invalid ticket number');
 
-        require(isValid == true, 'Invalid token id');
+        // gets the index of the array of MAX_INT bit arrays
+        uint256 offset = _ticketNumber / 256;
+        // gets the offset within the MAX_INT bit array
+        uint256 offsetWithin256 = _ticketNumber % 256;
+        // gets the stored bit
+        uint256 storedBit = (ticketNumbers[_editionId][offset] >> offsetWithin256) & uint256(1);
+        // check that the ticket number  hasn't already been claimed
+        require(storedBit == 1, 'NFT already claimed');
+
+        ticketNumbers[_editionId][offset] = ticketNumbers[_editionId][offset] & ~(uint256(1) << offsetWithin256);
 
         bytes32 digest = keccak256(
             abi.encodePacked(
                 '\x19\x01',
                 keccak256(abi.encode(keccak256('EIP712Domain(uint256 chainId)'), block.chainid)),
-                keccak256(abi.encode(PRESALE_TYPEHASH, address(this), msg.sender, _editionId, _requestedTokenId))
+                keccak256(abi.encode(PRESALE_TYPEHASH, address(this), msg.sender, _editionId, _ticketNumber))
             )
         );
         return digest.recover(_signature);

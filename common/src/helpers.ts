@@ -37,9 +37,9 @@ type PresaleWhiteListArgs = {
   contractAddress: string;
   buyerAddress: string;
   editionId: string;
-  requestedTokenId?: string;
   privateKey: string;
   provider: Provider;
+  ticketNumber?: number;
 };
 
 export async function getPresaleSignature({
@@ -49,7 +49,7 @@ export async function getPresaleSignature({
   editionId,
   privateKey,
   provider,
-  requestedTokenId,
+  ticketNumber,
 }: PresaleWhiteListArgs) {
   const wallet = new Wallet(privateKey, provider);
 
@@ -67,10 +67,10 @@ export async function getPresaleSignature({
   ];
 
   // only include requested token id if it is not undefined
-  if (requestedTokenId) {
+  if (ticketNumber) {
     EditionInfo.push(
       // Needed to prevent multiple purchases from the same address
-      { name: 'requestedTokenId', type: 'uint256' },
+      { name: 'ticketNumber', type: 'uint256' },
     );
   }
 
@@ -81,7 +81,7 @@ export async function getPresaleSignature({
       contractAddress: contractAddress.toLowerCase(),
       buyerAddress,
       editionId,
-      requestedTokenId,
+      ticketNumber,
     },
   );
 
