@@ -368,6 +368,14 @@ contract ArtistV3 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
         return editionId;
     }
 
+    function ownersOfTokenIds(uint256[] calldata _tokenIds) external view returns (address[] memory) {
+        address[] memory owners = new address[](_tokenIds.length);
+        for (uint256 i = 0; i < _tokenIds.length; i++) {
+            owners[i] = ownerOf(_tokenIds[i]);
+        }
+        return owners;
+    }
+
     // ================================
     // FUNCTIONS - PRIVATE
     // ================================
