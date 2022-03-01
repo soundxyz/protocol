@@ -230,24 +230,24 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
         // Check that the edition exists. Note: this is redundant
         // with the next check, but it is useful for clearer error messaging.
         require(quantity > 0, 'Edition does not exist');
-        // Check that there are still tokens available to purchase.
-        require(numSold < quantity, 'This edition is already sold out.');
         // Check that the sender is paying the correct amount.
         require(msg.value >= price, 'Must send enough to purchase the edition.');
 
         // If the open auction hasn't started...
         if (startTime > block.timestamp) {
             // Check that presale tokens are still available
-            require(
-                presaleQuantity > 0 && numSold < presaleQuantity,
-                'No presale available & open auction not started'
-            );
+            require(presaleQuantity > 0, 'No presale available & open auction not started');
 
             // Check that the signature is valid.
             require(
                 getSigner(_signature, _editionId, _ticketNumber) == editions[_editionId].signerAddress,
                 'Invalid signer'
             );
+        } else {
+            // Check that there are still tokens available to purchase.
+            // Only need to check this for the public sale (after the start time)
+            // so we can accomodate open editions
+            require(numSold < quantity, 'This edition is already sold out.');
         }
 
         // Don't allow purchases after the end time
