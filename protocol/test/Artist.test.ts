@@ -650,6 +650,7 @@ function testArtistContract(deployContract: Function, name: string) {
       const tx = await artist.connect(owner).setStartTime(EDITION_ID, newTime);
       const receipt = await tx.wait();
       const event = receipt.events.find((e) => e.event === 'AuctionTimeSet');
+
       expect(event.args.timeType).to.eq(0);
       expect(event.args.editionId.toString()).to.eq(EDITION_ID.toString());
       expect(event.args.newTime.toString()).to.eq(newTime.toString());
@@ -683,6 +684,7 @@ function testArtistContract(deployContract: Function, name: string) {
       const tx = await artist.connect(owner).setEndTime(EDITION_ID, newTime);
       const receipt = await tx.wait();
       const event = receipt.events.find((e) => e.event === 'AuctionTimeSet');
+
       expect(event.args.timeType).to.eq(1);
       expect(event.args.editionId.toString()).to.eq(EDITION_ID.toString());
       expect(event.args.newTime.toString()).to.eq(newTime.toString());
@@ -727,6 +729,7 @@ function testArtistContract(deployContract: Function, name: string) {
       const receipt = await tx.wait();
       const event = receipt.events.find((e) => e.event === 'SignerAddressSet');
 
+      expect(event.args.editionId.toString()).to.eq(EDITION_ID);
       expect(event.args.signerAddress).to.eq(newSigner.address);
     });
   });
@@ -768,6 +771,7 @@ function testArtistContract(deployContract: Function, name: string) {
 
       const event = receipt.events.find((e) => e.event === 'PresaleQuantitySet');
 
+      await expect(event.args.editionId.toString()).to.equal(EDITION_ID);
       await expect(event.args.presaleQuantity.toString()).to.equal(newPresaleQuantity.toString());
     });
   });
