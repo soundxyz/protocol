@@ -106,9 +106,9 @@ contract ArtistV3 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
 
     event AuctionTimeSet(TimeType timeType, uint256 editionId, uint32 indexed newTime);
 
-    event SignerAddressSet(address indexed signerAddress);
+    event SignerAddressSet(uint256 editionId, address indexed signerAddress);
 
-    event PresaleQuantitySet(uint32 presaleQuantity);
+    event PresaleQuantitySet(uint256 editionId, uint32 presaleQuantity);
 
     // ================================
     // PUBLIC & EXTERNAL WRITABLE FUNCTIONS
@@ -270,7 +270,7 @@ contract ArtistV3 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
         require(_newSignerAddress != address(0), 'Signer address cannot be 0');
 
         editions[_editionId].signerAddress = _newSignerAddress;
-        emit SignerAddressSet(_newSignerAddress);
+        emit SignerAddressSet(_editionId, _newSignerAddress);
     }
 
     /// @notice Sets the presale quantity for an edition
@@ -279,7 +279,7 @@ contract ArtistV3 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
         require(_presaleQuantity < editions[_editionId].quantity + 1, 'Must not exceed quantity');
 
         editions[_editionId].presaleQuantity = _presaleQuantity;
-        emit PresaleQuantitySet(_presaleQuantity);
+        emit PresaleQuantitySet(_editionId, _presaleQuantity);
     }
 
     // ================================
