@@ -166,16 +166,15 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
         uint32 _presaleQuantity,
         address _signerAddress
     ) external onlyOwner {
+        // get current edition id
+        uint256 currentEditionId = atEditionId.current();
+
         // Presale checks
         if (_presaleQuantity > 0) {
             // Must provide signer address if setting a presale quantity
             require(_signerAddress != address(0), 'Signer address cannot be 0');
-        }
 
-        uint256 currentEditionId = atEditionId.current();
-
-        // Initialize the ticketNumbers array
-        if (_presaleQuantity > 0) {
+            // Initialize the ticketNumbers array
             uint256 arrayLength = _presaleQuantity > 1024 ? 4 : (_presaleQuantity / 256) + 1;
             for (uint256 i = 0; i < arrayLength; i++) {
                 ticketNumbers[currentEditionId][i] = MAX_INT;
@@ -432,16 +431,27 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
     ) private returns (address) {
         // If the ticket number is less than the maximum, check if it has already been claimed
         if (_ticketNumber < 1024) {
-            // gets the index of the array of MAX_INT bit arrays
-            uint256 offset = _ticketNumber / 256;
-            // gets the offset within the MAX_INT bit array
-            uint256 offsetWithin256 = _ticketNumber % 256;
+            uint256 storageSlot;
+            uint256 offsetWithin256;
+            uint256 localGroup;
+            uint256 storedBit;
+            unchecked {
+                //  the index of the array of MAX_INT bit arrays
+                storageSlot = _ticketNumber / 256;
+                //  the offset within the MAX_INT bit array
+                offsetWithin256 = _ticketNumber % 256;
+            }
+
+            // caching the local group for efficiency
+            localGroup = ticketNumbers[_editionId][storageSlot];
+
             // gets the stored bit
-            uint256 storedBit = (ticketNumbers[_editionId][offset] >> offsetWithin256) & uint256(1);
-            // check that the ticket number  hasn't already been claimed
+            storedBit = (localGroup >> offsetWithin256) & uint256(1);
+
             require(storedBit == 1, 'Invalid ticket number or NFT already claimed');
 
-            ticketNumbers[_editionId][offset] = ticketNumbers[_editionId][offset] & ~(uint256(1) << offsetWithin256);
+            // set the bit to 0 to indicate that the ticket has been claimed
+            ticketNumbers[_editionId][storageSlot] = localGroup & ~(uint256(1) << offsetWithin256);
         }
 
         bytes32 digest = keccak256(
