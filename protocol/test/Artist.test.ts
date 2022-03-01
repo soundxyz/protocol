@@ -225,25 +225,6 @@ function testArtistContract(deployContract: Function, name: string) {
       }
     });
 
-    it(`reverts if presale quantity is too high`, async () => {
-      await setUpContract({ editionCount: 0 });
-      const signers = await ethers.getSigners();
-      const [_, artistEOA] = signers;
-
-      const tx = artist.createEdition(
-        artistEOA.address,
-        price,
-        69,
-        royaltyBPS,
-        startTime,
-        endTime,
-        70,
-        artistEOA.address
-      );
-
-      await expect(tx).to.be.revertedWith('Presale quantity too big');
-    });
-
     it(`reverts if signature not provided for presale`, async () => {
       await setUpContract({ editionCount: 0 });
       const signers = await ethers.getSigners();
@@ -294,34 +275,6 @@ function testArtistContract(deployContract: Function, name: string) {
       await expect(tx).to.be.revertedWith(`No presale available & open auction not started`);
     });
 
-    it(`reverts if ticketNumber is not in valid range`, async () => {
-      await setUpContract({
-        startTime: BigNumber.from(currentSeconds() + 99999999),
-        presaleQuantity: BigNumber.from(1),
-        editionCount: 0,
-      });
-      const [_, buyer] = await ethers.getSigners();
-
-      for (let editionId = 1; editionId < 10; editionId++) {
-        // Try a token id that is below the range for this edition
-        const ticketNumber = 10000000;
-        const presaleSignature1 = await getPresaleSignature({
-          chainId,
-          provider,
-          editionId: EDITION_ID,
-          ticketNumber: ticketNumber,
-          privateKey: process.env.ADMIN_PRIVATE_KEY,
-          contractAddress: artist.address,
-          buyerAddress: buyer.address,
-        });
-
-        const tx1 = artist.connect(buyer).buyEdition(EDITION_ID, presaleSignature1, ticketNumber, {
-          value: price,
-        });
-        await expect(tx1).to.be.revertedWith('Ticket number too large');
-      }
-    });
-
     it(`reverts if presale NFT has already been claimed`, async () => {
       await setUpContract({
         startTime: BigNumber.from(currentSeconds() + 99999999),
@@ -357,14 +310,15 @@ function testArtistContract(deployContract: Function, name: string) {
 
     it(`enables open editions: signed purchases can exceed quantity prior to the public sale start time`, async () => {
       const quantity = 25;
+      const presaleQuantity = 500;
       await setUpContract({
         quantity: BigNumber.from(quantity),
-        presaleQuantity: BigNumber.from(quantity),
+        presaleQuantity: BigNumber.from(MAX_UINT32),
         startTime: BigNumber.from(currentSeconds() + 99999999),
       });
       const [_, buyer] = await ethers.getSigners();
 
-      for (let ticketNumber = 1; ticketNumber <= quantity + 5; ticketNumber++) {
+      for (let ticketNumber = 1; ticketNumber <= presaleQuantity; ticketNumber++) {
         const presaleSignature = await getPresaleSignature({
           chainId,
           provider,

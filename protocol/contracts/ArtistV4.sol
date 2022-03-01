@@ -81,9 +81,10 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
     bytes32 public constant PRESALE_TYPEHASH =
         keccak256('EditionInfo(address contractAddress,address buyerAddress,uint256 editionId,uint256 ticketNumber)');
     uint256 private constant MAX_INT = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
-    // editionId -> bit arrays to track which tokens have been claimed
-    // set to fixed size of 1000 for efficiency (large number does not require more gas)
-    mapping(uint256 => uint256[1000]) ticketNumbers;
+    // ticketNumbers: editionId -> bit arrays to track which tokens have been claimed
+    // set to fixed size of 4 because createEdition becomes more expensive the higher we go,
+    // and 4 * 256 == 1024, which is enough for our needs
+    mapping(uint256 => uint256[4]) ticketNumbers;
 
     // ================================
     // EVENTS
@@ -167,17 +168,15 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
     ) external onlyOwner {
         // Presale checks
         if (_presaleQuantity > 0) {
-            // Presale quantity can't exceed total quantity
-            require(_presaleQuantity < _quantity + 1, 'Presale quantity too big');
-
             // Must provide signer address if setting a presale quantity
             require(_signerAddress != address(0), 'Signer address cannot be 0');
         }
 
         uint256 currentEditionId = atEditionId.current();
 
+        // Initialize the ticketNumbers array
         if (_presaleQuantity > 0) {
-            uint256 arrayLength = (_presaleQuantity / 256) + 1;
+            uint256 arrayLength = _presaleQuantity > 1024 ? 4 : (_presaleQuantity / 256) + 1;
             for (uint256 i = 0; i < arrayLength; i++) {
                 ticketNumbers[currentEditionId][i] = MAX_INT;
             }
@@ -431,18 +430,19 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
         uint256 _editionId,
         uint256 _ticketNumber
     ) private returns (address) {
-        // gets the index of the array of MAX_INT bit arrays
-        uint256 offset = _ticketNumber / 256;
-        // check that the ticket number is in the range for this edition
-        require(offset < ticketNumbers[_editionId].length, 'Ticket number too large');
-        // gets the offset within the MAX_INT bit array
-        uint256 offsetWithin256 = _ticketNumber % 256;
-        // gets the stored bit
-        uint256 storedBit = (ticketNumbers[_editionId][offset] >> offsetWithin256) & uint256(1);
-        // check that the ticket number  hasn't already been claimed
-        require(storedBit == 1, 'Invalid ticket number or NFT already claimed');
+        // If the ticket number is less than the maximum, check if it has already been claimed
+        if (_ticketNumber < 1024) {
+            // gets the index of the array of MAX_INT bit arrays
+            uint256 offset = _ticketNumber / 256;
+            // gets the offset within the MAX_INT bit array
+            uint256 offsetWithin256 = _ticketNumber % 256;
+            // gets the stored bit
+            uint256 storedBit = (ticketNumbers[_editionId][offset] >> offsetWithin256) & uint256(1);
+            // check that the ticket number  hasn't already been claimed
+            require(storedBit == 1, 'Invalid ticket number or NFT already claimed');
 
-        ticketNumbers[_editionId][offset] = ticketNumbers[_editionId][offset] & ~(uint256(1) << offsetWithin256);
+            ticketNumbers[_editionId][offset] = ticketNumbers[_editionId][offset] & ~(uint256(1) << offsetWithin256);
+        }
 
         bytes32 digest = keccak256(
             abi.encodePacked(
