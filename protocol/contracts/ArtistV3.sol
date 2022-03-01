@@ -362,7 +362,7 @@ contract ArtistV3 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
         // If edition ID is 0, then this edition was created before the V3 upgrade
         if (editionId == 0) {
             // get edition ID from storage
-            editionId = _tokenToEdition[_tokenId];
+            return _tokenToEdition[_tokenId];
         }
 
         return editionId;
