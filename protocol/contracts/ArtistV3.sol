@@ -231,10 +231,9 @@ contract ArtistV3 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
         uint256 tokenId;
         unchecked {
             tokenId = (_editionId << 128) | (numSold + 1);
+            // Increment the number of tokens sold for this edition.
+            editions[_editionId].numSold++;
         }
-
-        // Increment the number of tokens sold for this edition.
-        editions[_editionId].numSold++;
 
         // Send funds to the funding recipient.
         _sendFunds(editions[_editionId].fundingRecipient, msg.value);
