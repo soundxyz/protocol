@@ -82,9 +82,8 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
         keccak256('EditionInfo(address contractAddress,address buyerAddress,uint256 editionId,uint256 ticketNumber)');
     uint256 private constant MAX_INT = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
     // ticketNumbers: editionId -> bit arrays to track which tokens have been claimed
-    // set to fixed size of 4 because createEdition becomes more expensive the higher we go,
-    // and 4 * 256 == 1024, which is enough for our needs
-    mapping(uint256 => uint256[4]) ticketNumbers;
+    // set to fixed size of 100 for efficiency, 100 * 256 == 25,600, which is plenty for our needs
+    mapping(uint256 => uint256[100]) ticketNumbers;
 
     // ================================
     // EVENTS
@@ -175,7 +174,7 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
             require(_signerAddress != address(0), 'Signer address cannot be 0');
 
             // Initialize the ticketNumbers array
-            uint256 arrayLength = _presaleQuantity > 1024 ? 4 : (_presaleQuantity / 256) + 1;
+            uint256 arrayLength = _presaleQuantity > 25600 ? 100 : (_presaleQuantity / 256) + 1;
             for (uint256 i = 0; i < arrayLength; i++) {
                 ticketNumbers[currentEditionId][i] = MAX_INT;
             }
@@ -231,10 +230,10 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
         // Check that the sender is paying the correct amount.
         require(msg.value >= price, 'Must send enough to purchase the edition.');
 
-        // If the open auction hasn't started...
+        // If the public auction hasn't started...
         if (startTime > block.timestamp) {
             // Check that presale tokens are still available
-            require(presaleQuantity > 0, 'No presale available & open auction not started');
+            require(presaleQuantity > 0, 'No presale available & public auction not started');
 
             // Check that the signature is valid.
             require(
@@ -430,7 +429,7 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
         uint256 _ticketNumber
     ) private returns (address) {
         // If the ticket number is less than the maximum, check if it has already been claimed
-        if (_ticketNumber < 1024) {
+        if (_ticketNumber < 25600) {
             uint256 storageSlot;
             uint256 offsetWithin256;
             uint256 localGroup;

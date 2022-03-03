@@ -234,6 +234,31 @@ function testArtistContract(deployContract: Function, name: string) {
 
       await expect(tx).to.be.revertedWith('Signer address cannot be 0');
     });
+
+    it(`allows setting presale quantity greater than quantity (open edition)`, async () => {
+      await setUpContract({
+        editionCount: 0,
+      });
+      const signers = await ethers.getSigners();
+      const [_, artistEOA] = signers;
+      const presaleQuantity = BigNumber.from(MAX_UINT32);
+      const quantity = BigNumber.from(25);
+      const startTime = BigNumber.from(currentSeconds() + 99999999);
+
+      const tx = await artist.createEdition(
+        artistEOA.address,
+        price,
+        quantity,
+        royaltyBPS,
+        startTime,
+        endTime,
+        presaleQuantity,
+        soundDeployer.address
+      );
+      const receipt = await tx.wait();
+
+      await expect(receipt.status).to.equal(1);
+    });
   });
 
   describe('buyEdition', () => {
@@ -263,7 +288,7 @@ function testArtistContract(deployContract: Function, name: string) {
       await expect(tx).to.be.revertedWith('This edition is already sold out');
     });
 
-    it(`reverts if there are no presale tokens and open auction hasn't started`, async () => {
+    it(`reverts if there are no presale tokens and public auction hasn't started`, async () => {
       await setUpContract({
         startTime: BigNumber.from(currentSeconds() + 99999999),
         presaleQuantity: BigNumber.from(0),
@@ -272,7 +297,7 @@ function testArtistContract(deployContract: Function, name: string) {
       const tx = artist.connect(purchaser).buyEdition(EDITION_ID, EMPTY_SIGNATURE, NULL_TOKEN_ID, {
         value: price,
       });
-      await expect(tx).to.be.revertedWith(`No presale available & open auction not started`);
+      await expect(tx).to.be.revertedWith(`No presale available & public auction not started`);
     });
 
     it(`reverts if presale NFT has already been claimed`, async () => {
@@ -313,7 +338,7 @@ function testArtistContract(deployContract: Function, name: string) {
       const presaleQuantity = 500;
       await setUpContract({
         quantity: BigNumber.from(quantity),
-        presaleQuantity: BigNumber.from(MAX_UINT32),
+        presaleQuantity: BigNumber.from(presaleQuantity),
         startTime: BigNumber.from(currentSeconds() + 99999999),
       });
       const [_, buyer] = await ethers.getSigners();
