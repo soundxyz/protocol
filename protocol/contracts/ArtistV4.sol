@@ -258,11 +258,11 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
             editions[_editionId].numSold++;
         }
 
-        // Send funds to the funding recipient.
-        _sendFunds(editions[_editionId].fundingRecipient, msg.value);
-
         // Increment the number of tokens sold for this edition.
         editions[_editionId].numSold = newNumSold;
+
+        // Send funds to the funding recipient.
+        _sendFunds(editions[_editionId].fundingRecipient, msg.value);
 
         // Mint a new token for the sender, using the `tokenId`.
         _mint(msg.sender, tokenId);
