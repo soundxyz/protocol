@@ -12,3 +12,4 @@ env*
 .vscode
 typechain
 .turbo
+out/

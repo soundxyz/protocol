@@ -24,6 +24,7 @@ libs = ['node_modules']
 offline = false
 optimizer = true
 optimizer_runs = 200
+out = 'out'
 remappings = [
     '@ensdomains/=node_modules/@ensdomains/',
     '@openzeppelin/=node_modules/@openzeppelin/',
@@ -37,5 +38,3 @@ src = 'contracts'
 test = 'test'
 tx_origin = '0x00a329c0648769a73afac7f9381e08fb43dbea72'
 verbosity = 0
-
-out = "src/artifacts/contracts"

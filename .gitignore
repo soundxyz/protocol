@@ -1,3 +1,8 @@
+#Foundry
+out/
+protocol/out/
+cache/
+artifacts/
 # Logs
 logs
 *.log
