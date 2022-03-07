@@ -17,8 +17,6 @@ import {CountersUpgradeable} from '@openzeppelin/contracts-upgradeable/utils/Cou
 import {ArtistCreator} from './ArtistCreator.sol';
 import {ECDSA} from '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
 
-import 'hardhat/console.sol';
-
 /// @title Artist
 /// @author SoundXYZ - @gigamesh & @vigneshka
 /// @notice This contract is used to create & sell song NFTs for the artist who owns the contract.
@@ -80,7 +78,7 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
     // The presale typehash (used for checking signature validity)
     bytes32 public constant PRESALE_TYPEHASH =
         keccak256('EditionInfo(address contractAddress,address buyerAddress,uint256 editionId,uint256 ticketNumber)');
-    uint256 private constant MAX_INT = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
+    uint256 private constant MAX_INT = type(uint256).max;
     // ticketNumbers: editionId -> bit arrays to track which tokens have been claimed
     // set to fixed size of 100 for efficiency, 100 * 256 == 25,600, which is plenty for our needs
     mapping(uint256 => uint256[100]) ticketNumbers;
@@ -253,13 +251,10 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
         // Create the token id by packing editionId in the top bits
         uint256 tokenId;
         unchecked {
-            tokenId = (_editionId << 128) | (numSold + 1);
+            tokenId = (_editionId << 128) | newNumSold;
             // Increment the number of tokens sold for this edition.
-            editions[_editionId].numSold++;
+            editions[_editionId].numSold = newNumSold;
         }
-
-        // Increment the number of tokens sold for this edition.
-        editions[_editionId].numSold = newNumSold;
 
         // Send funds to the funding recipient.
         _sendFunds(editions[_editionId].fundingRecipient, msg.value);
