@@ -309,7 +309,7 @@ function testArtistContract(deployContract: Function, name: string) {
       const [_, buyer] = await ethers.getSigners();
 
       // Try a token id that is below the range for this edition
-      const ticketNumber = 1;
+      const ticketNumber = '1';
       const presaleSignature = await getPresaleSignature({
         chainId,
         provider,
@@ -335,7 +335,7 @@ function testArtistContract(deployContract: Function, name: string) {
 
     it(`enables open editions: signed purchases can exceed quantity prior to the public sale start time`, async () => {
       const quantity = 25;
-      const presaleQuantity = 1000;
+      const presaleQuantity = 1_000_000;
       await setUpContract({
         quantity: BigNumber.from(quantity),
         presaleQuantity: BigNumber.from(presaleQuantity),
@@ -343,12 +343,13 @@ function testArtistContract(deployContract: Function, name: string) {
       });
       const [_, buyer] = await ethers.getSigners();
 
-      for (let ticketNumber = 1; ticketNumber <= presaleQuantity; ticketNumber++) {
+      // Test some purchases in order
+      for (let ticketNumber = 1; ticketNumber <= 100; ticketNumber++) {
         const presaleSignature = await getPresaleSignature({
           chainId,
           provider,
           editionId: EDITION_ID,
-          ticketNumber,
+          ticketNumber: ticketNumber.toString(),
           privateKey: process.env.ADMIN_PRIVATE_KEY,
           contractAddress: artist.address,
           buyerAddress: buyer.address,
@@ -361,6 +362,66 @@ function testArtistContract(deployContract: Function, name: string) {
 
         expect(receipt.status).to.equal(1);
       }
+
+      // test a couple purchases out of order in the higher end of the presale quantity
+      const ticketNum1 = (presaleQuantity - 69).toString();
+      const presaleSig1 = await getPresaleSignature({
+        chainId,
+        provider,
+        editionId: EDITION_ID,
+        ticketNumber: ticketNum1,
+        privateKey: process.env.ADMIN_PRIVATE_KEY,
+        contractAddress: artist.address,
+        buyerAddress: buyer.address,
+      });
+      const tx1 = await artist.connect(buyer).buyEdition(EDITION_ID, presaleSig1, ticketNum1, {
+        value: price,
+      });
+      const receipt1 = await tx1.wait();
+      expect(receipt1.status).to.equal(1);
+
+      const ticketNum2 = (presaleQuantity - 42069).toString();
+      const presaleSig2 = await getPresaleSignature({
+        chainId,
+        provider,
+        editionId: EDITION_ID,
+        ticketNumber: ticketNum2,
+        privateKey: process.env.ADMIN_PRIVATE_KEY,
+        contractAddress: artist.address,
+        buyerAddress: buyer.address,
+      });
+      const tx2 = await artist.connect(buyer).buyEdition(EDITION_ID, presaleSig2, ticketNum2, {
+        value: price,
+      });
+      const receipt2 = await tx2.wait();
+      expect(receipt2.status).to.equal(1);
+    });
+
+    it(`reverts if ticket number exceeds maximum`, async () => {
+      const quantity = 25;
+      const presaleQuantity = 1_000_000;
+      await setUpContract({
+        quantity: BigNumber.from(quantity),
+        presaleQuantity: BigNumber.from(presaleQuantity),
+        startTime: BigNumber.from(currentSeconds() + 99999999),
+      });
+      const [_, buyer] = await ethers.getSigners();
+
+      const ticketNum1 = BigNumber.from(2).pow(128);
+      const presaleSig1 = await getPresaleSignature({
+        chainId,
+        provider,
+        editionId: EDITION_ID,
+        ticketNumber: ticketNum1.toString(),
+        privateKey: process.env.ADMIN_PRIVATE_KEY,
+        contractAddress: artist.address,
+        buyerAddress: buyer.address,
+      });
+      const tx1 = artist.connect(buyer).buyEdition(EDITION_ID, presaleSig1, ticketNum1, {
+        value: price,
+      });
+
+      expect(tx1).to.be.revertedWith('Ticket number exceeds max');
     });
 
     it(`reverts with "Auction has ended" when expected`, async () => {
@@ -380,7 +441,7 @@ function testArtistContract(deployContract: Function, name: string) {
         startTime: BigNumber.from(currentSeconds() + 99999999),
       });
 
-      const ticketNumber = 1;
+      const ticketNumber = '1';
       const tx = artist.buyEdition(EDITION_ID, EMPTY_SIGNATURE, ticketNumber, {
         value: price,
       });
@@ -399,7 +460,7 @@ function testArtistContract(deployContract: Function, name: string) {
       const signers = await ethers.getSigners();
       const buyer = signers[10];
 
-      const ticketNumber = 1;
+      const ticketNumber = '1';
       const presaleSignature = await getPresaleSignature({
         chainId,
         provider,
@@ -429,7 +490,7 @@ function testArtistContract(deployContract: Function, name: string) {
       const buyer = signers[10];
 
       const wrongEditionId = '666';
-      const ticketNumber = 1;
+      const ticketNumber = '1';
       const presaleSignature = await getPresaleSignature({
         chainId,
         provider,
@@ -563,7 +624,7 @@ function testArtistContract(deployContract: Function, name: string) {
         chainId,
         provider,
         editionId: EDITION_ID,
-        ticketNumber: 1,
+        ticketNumber: '1',
         privateKey: process.env.ADMIN_PRIVATE_KEY,
         contractAddress: artist.address,
         buyerAddress: buyer.address,
@@ -582,7 +643,7 @@ function testArtistContract(deployContract: Function, name: string) {
       const [_, buyer] = await ethers.getSigners();
 
       for (let i = 0; i < quantity; i++) {
-        const ticketNumber = getRandomInt();
+        const ticketNumber = getRandomInt().toString();
         // console.log({ ticketNumber });
         const signature = await getPresaleSignature({
           chainId,
@@ -606,7 +667,7 @@ function testArtistContract(deployContract: Function, name: string) {
       await setUpContract({ quantity: BigNumber.from(quantity), presaleQuantity: BigNumber.from(1) });
       const [_, buyer] = await ethers.getSigners();
 
-      const ticketNumber = 1;
+      const ticketNumber = '1';
       const signature = await getPresaleSignature({
         chainId,
         provider,
@@ -631,7 +692,7 @@ function testArtistContract(deployContract: Function, name: string) {
       await setUpContract({ quantity: BigNumber.from(quantity), presaleQuantity: BigNumber.from(1) });
       const [_, buyer] = await ethers.getSigners();
 
-      const ticketNumber = 1;
+      const ticketNumber = '1';
       const signature = await getPresaleSignature({
         chainId,
         provider,
@@ -922,7 +983,7 @@ function testArtistContract(deployContract: Function, name: string) {
         const royalty = BigNumber.from(getRandomInt(1, 10_000));
         const secondarySalePrice = ethers.utils.parseEther(getRandomBN().toString());
 
-        const ticketNumber = i;
+        const ticketNumber = i.toString();
         const signature = await getPresaleSignature({
           chainId,
           provider,
