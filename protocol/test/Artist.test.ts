@@ -335,7 +335,7 @@ function testArtistContract(deployContract: Function, name: string) {
 
     it(`enables open editions: signed purchases can exceed quantity prior to the public sale start time`, async () => {
       const quantity = 25;
-      const presaleQuantity = 500;
+      const presaleQuantity = 1000;
       await setUpContract({
         quantity: BigNumber.from(quantity),
         presaleQuantity: BigNumber.from(presaleQuantity),

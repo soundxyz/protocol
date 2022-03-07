@@ -79,9 +79,8 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
     bytes32 public constant PRESALE_TYPEHASH =
         keccak256('EditionInfo(address contractAddress,address buyerAddress,uint256 editionId,uint256 ticketNumber)');
     uint256 private constant MAX_INT = type(uint256).max;
-    // ticketNumbers: editionId -> bit arrays to track which tokens have been claimed
-    // set to fixed size of 100 for efficiency, 100 * 256 == 25,600, which is plenty for our needs
-    mapping(uint256 => uint256[100]) ticketNumbers;
+    // Used to track which tokens have been claimed. editionId -> index -> max int bit array
+    mapping(uint256 => mapping(uint256 => uint256)) ticketNumbers;
 
     // ================================
     // EVENTS
@@ -170,12 +169,6 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
         if (_presaleQuantity > 0) {
             // Must provide signer address if setting a presale quantity
             require(_signerAddress != address(0), 'Signer address cannot be 0');
-
-            // Initialize the ticketNumbers array
-            uint256 arrayLength = _presaleQuantity > 25600 ? 100 : (_presaleQuantity / 256) + 1;
-            for (uint256 i = 0; i < arrayLength; i++) {
-                ticketNumbers[currentEditionId][i] = MAX_INT;
-            }
         }
 
         editions[currentEditionId] = Edition({
@@ -423,30 +416,38 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
         uint256 _editionId,
         uint256 _ticketNumber
     ) private returns (address) {
-        // If the ticket number is less than the maximum, check if it has already been claimed
-        if (_ticketNumber < 25600) {
-            uint256 storageSlot;
-            uint256 offsetWithin256;
-            uint256 localGroup;
-            uint256 storedBit;
-            unchecked {
-                //  the index of the array of MAX_INT bit arrays
-                storageSlot = _ticketNumber / 256;
-                //  the offset within the MAX_INT bit array
-                offsetWithin256 = _ticketNumber % 256;
-            }
+        // Check that the ticket number is within the reserved range for the edition
+        require(_ticketNumber < 2**128, 'Ticket number exceeds max');
 
-            // caching the local group for efficiency
-            localGroup = ticketNumbers[_editionId][storageSlot];
-
-            // gets the stored bit
-            storedBit = (localGroup >> offsetWithin256) & uint256(1);
-
-            require(storedBit == 1, 'Invalid ticket number or NFT already claimed');
-
-            // set the bit to 0 to indicate that the ticket has been claimed
-            ticketNumbers[_editionId][storageSlot] = localGroup & ~(uint256(1) << offsetWithin256);
+        uint256 localGroup; // the MAX_INT bit array for this ticket number
+        uint256 ticketNumbersIdx; // the index of the the local group
+        uint256 localGroupOffset; // the offset/index for the ticket number in the local group
+        uint256 storedBit; // the stored bit at this ticket number's index within the local group
+        unchecked {
+            ticketNumbersIdx = _ticketNumber / 256;
+            localGroupOffset = _ticketNumber % 256;
         }
+
+        // cache the local group for efficiency
+        localGroup = ticketNumbers[_editionId][ticketNumbersIdx];
+
+        /**
+         * This is a reserved bit stored at the start of the local group that indicates whether or not the MAX_INT (local group) has been initialized
+         * If it is 0, the current buyer pays the cost to initialize the group.
+         */
+        uint256 magicInitBit = localGroup & uint256(1);
+
+        if (magicInitBit == 0) {
+            localGroup = MAX_INT;
+        }
+
+        // gets the stored bit
+        storedBit = (localGroup >> localGroupOffset) & uint256(1);
+
+        require(storedBit == 1, 'Invalid ticket number or NFT already claimed');
+
+        // set the bit to 0 to indicate that the ticket has been claimed
+        ticketNumbers[_editionId][ticketNumbersIdx] = localGroup & ~(uint256(1) << localGroupOffset);
 
         bytes32 digest = keccak256(
             abi.encodePacked(
