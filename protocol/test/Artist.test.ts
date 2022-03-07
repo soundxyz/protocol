@@ -344,7 +344,12 @@ function testArtistContract(deployContract: Function, name: string) {
       const [_, buyer] = await ethers.getSigners();
 
       // Test some purchases in order
-      for (let ticketNumber = 1; ticketNumber <= 100; ticketNumber++) {
+      for (let ticketNumber = 1; ticketNumber <= 500; ticketNumber++) {
+        // Skip ticket number if it is a multiple of 256,
+        // because that is the magic index we use to initialize the next 256 bit array of tickets for the edition
+        if (ticketNumber % 256 === 0) {
+          continue;
+        }
         const presaleSignature = await getPresaleSignature({
           chainId,
           provider,

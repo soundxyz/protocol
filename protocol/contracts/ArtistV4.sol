@@ -428,6 +428,9 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
             localGroupOffset = _ticketNumber % 256;
         }
 
+        // Revert if local group offset is 0 because index 0 of every group is reserved for the magic init bit
+        require(localGroupOffset != 0, 'Invalid ticket number');
+
         // cache the local group for efficiency
         localGroup = ticketNumbers[_editionId][ticketNumbersIdx];
 
