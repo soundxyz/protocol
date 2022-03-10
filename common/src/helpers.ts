@@ -39,7 +39,7 @@ type PresaleWhiteListArgs = {
   editionId: string;
   privateKey: string;
   provider: Provider;
-  ticketNumber?: number;
+  ticketNumber?: string;
 };
 
 export async function getPresaleSignature({
