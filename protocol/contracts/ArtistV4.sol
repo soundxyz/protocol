@@ -78,7 +78,6 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
     // The presale typehash (used for checking signature validity)
     bytes32 public constant PRESALE_TYPEHASH =
         keccak256('EditionInfo(address contractAddress,address buyerAddress,uint256 editionId,uint256 ticketNumber)');
-    uint256 private constant MAX_INT = type(uint256).max;
     // Used to track which tokens have been claimed. editionId -> index -> max int bit array
     mapping(uint256 => mapping(uint256 => uint256)) ticketNumbers;
 
@@ -419,7 +418,7 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
         // Check that the ticket number is within the reserved range for the edition
         require(_ticketNumber < 2**128, 'Ticket number exceeds max');
 
-        uint256 localGroup; // the MAX_INT bit array for this ticket number
+        uint256 localGroup; // the max int bit array for this ticket number
         uint256 ticketNumbersIdx; // the index of the the local group
         uint256 localGroupOffset; // the offset/index for the ticket number in the local group
         uint256 storedBit; // the stored bit at this ticket number's index within the local group
@@ -435,13 +434,13 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
         localGroup = ticketNumbers[_editionId][ticketNumbersIdx];
 
         /**
-         * This is a reserved bit stored at the start of the local group that indicates whether or not the MAX_INT (local group) has been initialized
+         * This is a reserved bit stored at the start of the local group that indicates whether or not the max int (local group) has been initialized
          * If it is 0, the current buyer pays the cost to initialize the group.
          */
         uint256 magicInitBit = localGroup & uint256(1);
 
         if (magicInitBit == 0) {
-            localGroup = MAX_INT;
+            localGroup = type(uint256).max;
         }
 
         // gets the stored bit
