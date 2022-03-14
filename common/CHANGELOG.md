@@ -1,5 +1,11 @@
 # @soundxyz/common
 
+## 2.4.0
+
+### Minor Changes
+
+- 91a85d9: Sets some edition startTimes in the future
+
 ## 2.3.0
 
 ### Minor Changes
