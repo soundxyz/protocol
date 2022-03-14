@@ -12,7 +12,7 @@ pragma solidity 0.8.7;
 import {IERC2981Upgradeable, IERC165Upgradeable} from '@openzeppelin/contracts-upgradeable/interfaces/IERC2981Upgradeable.sol';
 import {ERC721Upgradeable} from '@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol';
 import {OwnableUpgradeable} from '@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol';
-import {Strings} from './Strings.sol';
+import {LibUintToString} from './LibUintToString.sol';
 import {CountersUpgradeable} from '@openzeppelin/contracts-upgradeable/utils/CountersUpgradeable.sol';
 import {ArtistCreator} from './ArtistCreator.sol';
 import {ECDSA} from '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
@@ -26,7 +26,7 @@ contract ArtistV3 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
     // TYPES
     // ================================
 
-    using Strings for uint256;
+    using LibUintToString for uint256;
     using CountersUpgradeable for CountersUpgradeable.Counter;
     using ECDSA for bytes32;
 
