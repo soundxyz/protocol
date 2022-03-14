@@ -149,7 +149,7 @@ function testArtistContract(deployContract: Function, name: string) {
     startTime = customConfig.startTime || BigNumber.from(0x0); // default to start of unix epoch
     endTime = customConfig.endTime || BigNumber.from(MAX_UINT32);
     presaleQuantity = customConfig.presaleQuantity || BigNumber.from(0);
-    signerAddress = customConfig.signer?.address || soundOwner.address;
+    signerAddress = customConfig.signer === null ? NULL_ADDRESS : soundOwner.address;
 
     if (!customConfig.skipCreateEditions) {
       for (let i = 0; i < editionCount; i++) {
@@ -226,21 +226,78 @@ function testArtistContract(deployContract: Function, name: string) {
 
     it(`reverts if presale quantity is too high`, async () => {
       await setUpContract({ skipCreateEditions: true });
-      const signers = await ethers.getSigners();
-      const [_, artistEOA] = signers;
+
+      presaleQuantity = BigNumber.from(70);
+      quantity = BigNumber.from(69);
 
       const tx = artist.createEdition(
-        artistEOA.address,
+        fundingRecipient.address,
         price,
-        69,
+        quantity,
         royaltyBPS,
         startTime,
         endTime,
-        70,
-        artistEOA.address
+        presaleQuantity,
+        signerAddress
       );
 
       await expect(tx).to.be.revertedWith('Presale quantity too big');
+    });
+
+    it(`reverts if no quantity is given`, async () => {
+      await setUpContract({ skipCreateEditions: true });
+
+      quantity = BigNumber.from(0);
+      const tx = artist.createEdition(
+        fundingRecipient.address,
+        price,
+        quantity,
+        royaltyBPS,
+        startTime,
+        endTime,
+        presaleQuantity,
+        signerAddress
+      );
+
+      await expect(tx).to.be.revertedWith('Must set quantity');
+    });
+
+    it(`reverts if no fundingRecipient is given`, async () => {
+      await setUpContract({ skipCreateEditions: true });
+
+      fundingRecipient = NULL_ADDRESS;
+      const tx = artist.createEdition(
+        fundingRecipient,
+        price,
+        quantity,
+        royaltyBPS,
+        startTime,
+        endTime,
+        presaleQuantity,
+        signerAddress
+      );
+
+      await expect(tx).to.be.revertedWith('Must set fundingRecipient');
+    });
+
+    it(`reverts if end time exceeds start time`, async () => {
+      await setUpContract({ skipCreateEditions: true });
+
+      startTime = BigNumber.from(1);
+      endTime = BigNumber.from(0);
+
+      const tx = artist.createEdition(
+        fundingRecipient.address,
+        price,
+        quantity,
+        royaltyBPS,
+        startTime,
+        endTime,
+        presaleQuantity,
+        signerAddress
+      );
+
+      await expect(tx).to.be.revertedWith('End time must be greater than start time');
     });
 
     it(`reverts if signature not provided for presale`, async () => {
@@ -750,6 +807,14 @@ function testArtistContract(deployContract: Function, name: string) {
       const tx = artist.setPresaleQuantity(EDITION_ID, 70);
 
       expect(tx).to.be.revertedWith('Must not exceed quantity');
+    });
+
+    it('prevents attempt to set presale quantity when there is no signer address', async () => {
+      await setUpContract({ quantity: BigNumber.from(69), signer: null });
+
+      const tx = artist.setPresaleQuantity(EDITION_ID, 1);
+
+      expect(tx).to.be.revertedWith('Edition must have a signer');
     });
 
     it('sets a new presale quantity for the edition', async () => {

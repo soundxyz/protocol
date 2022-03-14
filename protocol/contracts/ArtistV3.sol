@@ -133,9 +133,6 @@ contract ArtistV3 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
         // E.g. https://sound.xyz/api/metadata/[artistId]/
         baseURI = string(abi.encodePacked(_baseURI, _artistId.toString(), '/'));
 
-        // Set token id start to be 1 not 0
-        atTokenId.increment();
-
         // Set edition id start to be 1 not 0
         atEditionId.increment();
     }
@@ -160,6 +157,9 @@ contract ArtistV3 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
         address _signerAddress
     ) external onlyOwner {
         require(_presaleQuantity < _quantity + 1, 'Presale quantity too big');
+        require(_quantity > 0, 'Must set quantity');
+        require(_fundingRecipient != address(0), 'Must set fundingRecipient');
+        require(_endTime > _startTime, 'End time must be greater than start time');
 
         if (_presaleQuantity > 0) {
             require(_signerAddress != address(0), 'Signer address cannot be 0');
@@ -232,7 +232,7 @@ contract ArtistV3 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
         unchecked {
             tokenId = (_editionId << 128) | (numSold + 1);
             // Increment the number of tokens sold for this edition.
-            editions[_editionId].numSold++;
+            editions[_editionId].numSold = numSold + 1;
         }
 
         // Send funds to the funding recipient.
@@ -279,6 +279,8 @@ contract ArtistV3 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
     function setPresaleQuantity(uint256 _editionId, uint32 _presaleQuantity) external onlyOwner {
         // Check that the presale quantity is less than the total quantity
         require(_presaleQuantity < editions[_editionId].quantity + 1, 'Must not exceed quantity');
+        // Prevent setting to presale quantity when there is no signer address
+        require(editions[_editionId].signerAddress != address(0), 'Edition must have a signer');
 
         editions[_editionId].presaleQuantity = _presaleQuantity;
         emit PresaleQuantitySet(_editionId, _presaleQuantity);
