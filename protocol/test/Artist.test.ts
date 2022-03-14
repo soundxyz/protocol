@@ -359,6 +359,8 @@ function testArtistContract(deployContract: Function, name: string) {
       const [_, buyer] = await ethers.getSigners();
       const chainId = (await provider.getNetwork()).chainId;
 
+      console.log({ chainId });
+
       const signature = await getPresaleSignature({
         chainId,
         provider,

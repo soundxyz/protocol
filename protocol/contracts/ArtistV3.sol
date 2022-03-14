@@ -17,6 +17,8 @@ import {CountersUpgradeable} from '@openzeppelin/contracts-upgradeable/utils/Cou
 import {ArtistCreator} from './ArtistCreator.sol';
 import {ECDSA} from '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
 
+import 'hardhat/console.sol';
+
 /// @title Artist
 /// @author SoundXYZ - @gigamesh & @vigneshka
 /// @notice This contract is used to create & sell song NFTs for the artist who owns the contract.
@@ -76,8 +78,9 @@ contract ArtistV3 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
     // <DEPRECATED IN V3> The amount of funds that have already been withdrawn for a given edition.
     mapping(uint256 => uint256) public withdrawnForEdition;
     // The permissioned typehash (used for checking signature validity)
-    bytes32 public constant PERMISSIONED_SALE_TYPEHASH =
+    bytes32 private constant PERMISSIONED_SALE_TYPEHASH =
         keccak256('EditionInfo(address contractAddress,address buyerAddress,uint256 editionId)');
+    bytes32 private immutable DOMAIN_SEPARATOR;
 
     // ================================
     // EVENTS
@@ -113,6 +116,11 @@ contract ArtistV3 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
     // ================================
     // PUBLIC & EXTERNAL WRITABLE FUNCTIONS
     // ================================
+
+    /// @notice Contract constructor
+    constructor() public {
+        DOMAIN_SEPARATOR = keccak256(abi.encode(keccak256('EIP712Domain(uint256 chainId)'), block.chainid));
+    }
 
     /// @notice Initializes the contract
     /// @param _owner Owner of edition
@@ -400,10 +408,11 @@ contract ArtistV3 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
     /// @return address of signer
     /// @dev https://eips.ethereum.org/EIPS/eip-712
     function getSigner(bytes calldata _signature, uint256 _editionId) private view returns (address) {
+        console.logBytes32(DOMAIN_SEPARATOR);
         bytes32 digest = keccak256(
             abi.encodePacked(
                 '\x19\x01',
-                keccak256(abi.encode(keccak256('EIP712Domain(uint256 chainId)'), block.chainid)),
+                DOMAIN_SEPARATOR,
                 keccak256(abi.encode(PERMISSIONED_SALE_TYPEHASH, address(this), msg.sender, _editionId))
             )
         );
