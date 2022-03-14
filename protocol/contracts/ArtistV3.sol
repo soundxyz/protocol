@@ -52,8 +52,8 @@ contract ArtistV3 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
         uint32 startTime;
         // end timestamp of auction (in seconds since unix epoch)
         uint32 endTime;
-        // quantity of presale tokens
-        uint32 presaleQuantity;
+        // quantity of permissioned tokens
+        uint32 permissionedQuantity;
         // whitelist signer address
         address signerAddress;
     }
@@ -75,8 +75,8 @@ contract ArtistV3 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
     mapping(uint256 => uint256) public depositedForEdition;
     // <DEPRECATED IN V3> The amount of funds that have already been withdrawn for a given edition.
     mapping(uint256 => uint256) public withdrawnForEdition;
-    // The presale typehash (used for checking signature validity)
-    bytes32 public constant PRESALE_TYPEHASH =
+    // The permissioned typehash (used for checking signature validity)
+    bytes32 public constant PERMISSIONED_SALE_TYPEHASH =
         keccak256('EditionInfo(address contractAddress,address buyerAddress,uint256 editionId)');
 
     // ================================
@@ -91,7 +91,7 @@ contract ArtistV3 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
         uint32 royaltyBPS,
         uint32 startTime,
         uint32 endTime,
-        uint32 presaleQuantity,
+        uint32 permissionedQuantity,
         address signerAddress
     );
 
@@ -108,7 +108,7 @@ contract ArtistV3 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
 
     event SignerAddressSet(uint256 editionId, address indexed signerAddress);
 
-    event PresaleQuantitySet(uint256 editionId, uint32 presaleQuantity);
+    event PermissionedQuantitySet(uint256 editionId, uint32 permissionedQuantity);
 
     // ================================
     // PUBLIC & EXTERNAL WRITABLE FUNCTIONS
@@ -144,7 +144,7 @@ contract ArtistV3 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
     /// @param _royaltyBPS The royalty amount in bps.
     /// @param _startTime The start time of the auction, in seconds since unix epoch.
     /// @param _endTime The end time of the auction, in seconds since unix epoch.
-    /// @param _presaleQuantity The quantity of presale tokens.
+    /// @param _permissionedQuantity The quantity of tokens that require a signature to buy.
     /// @param _signerAddress signer address.
     function createEdition(
         address payable _fundingRecipient,
@@ -153,15 +153,15 @@ contract ArtistV3 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
         uint32 _royaltyBPS,
         uint32 _startTime,
         uint32 _endTime,
-        uint32 _presaleQuantity,
+        uint32 _permissionedQuantity,
         address _signerAddress
     ) external onlyOwner {
-        require(_presaleQuantity < _quantity + 1, 'Presale quantity too big');
+        require(_permissionedQuantity < _quantity + 1, 'Permissioned quantity too big');
         require(_quantity > 0, 'Must set quantity');
         require(_fundingRecipient != address(0), 'Must set fundingRecipient');
         require(_endTime > _startTime, 'End time must be greater than start time');
 
-        if (_presaleQuantity > 0) {
+        if (_permissionedQuantity > 0) {
             require(_signerAddress != address(0), 'Signer address cannot be 0');
         }
 
@@ -173,7 +173,7 @@ contract ArtistV3 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
             royaltyBPS: _royaltyBPS,
             startTime: _startTime,
             endTime: _endTime,
-            presaleQuantity: _presaleQuantity,
+            permissionedQuantity: _permissionedQuantity,
             signerAddress: _signerAddress
         });
 
@@ -185,7 +185,7 @@ contract ArtistV3 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
             _royaltyBPS,
             _startTime,
             _endTime,
-            _presaleQuantity,
+            _permissionedQuantity,
             _signerAddress
         );
 
@@ -194,7 +194,7 @@ contract ArtistV3 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
 
     /// @notice Creates a new token for the given edition, and assigns it to the buyer
     /// @param _editionId The id of the edition to purchase
-    /// @param _signature A signed message for authorizing presale purchases
+    /// @param _signature A signed message for authorizing permissioned purchases
     function buyEdition(uint256 _editionId, bytes calldata _signature) external payable {
         // Caching variables locally to reduce reads
         uint256 price = editions[_editionId].price;
@@ -202,7 +202,7 @@ contract ArtistV3 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
         uint32 numSold = editions[_editionId].numSold;
         uint32 startTime = editions[_editionId].startTime;
         uint32 endTime = editions[_editionId].endTime;
-        uint32 presaleQuantity = editions[_editionId].presaleQuantity;
+        uint32 permissionedQuantity = editions[_editionId].permissionedQuantity;
 
         // Check that the edition exists. Note: this is redundant
         // with the next check, but it is useful for clearer error messaging.
@@ -214,10 +214,10 @@ contract ArtistV3 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
 
         // If the open auction hasn't started...
         if (startTime > block.timestamp) {
-            // Check that presale tokens are still available
+            // Check that permissioned tokens are still available
             require(
-                presaleQuantity > 0 && numSold < presaleQuantity,
-                'No presale available & open auction not started'
+                permissionedQuantity > 0 && numSold < permissionedQuantity,
+                'No permissioned tokens available & open auction not started'
             );
 
             // Check that the signature is valid.
@@ -275,15 +275,15 @@ contract ArtistV3 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
         emit SignerAddressSet(_editionId, _newSignerAddress);
     }
 
-    /// @notice Sets the presale quantity for an edition
-    function setPresaleQuantity(uint256 _editionId, uint32 _presaleQuantity) external onlyOwner {
-        // Check that the presale quantity is less than the total quantity
-        require(_presaleQuantity < editions[_editionId].quantity + 1, 'Must not exceed quantity');
-        // Prevent setting to presale quantity when there is no signer address
+    /// @notice Sets the permissioned quantity for an edition
+    function setPermissionedQuantity(uint256 _editionId, uint32 _permissionedQuantity) external onlyOwner {
+        // Check that the permissioned quantity is less than the total quantity
+        require(_permissionedQuantity < editions[_editionId].quantity + 1, 'Must not exceed quantity');
+        // Prevent setting to permissioned quantity when there is no signer address
         require(editions[_editionId].signerAddress != address(0), 'Edition must have a signer');
 
-        editions[_editionId].presaleQuantity = _presaleQuantity;
-        emit PresaleQuantitySet(_editionId, _presaleQuantity);
+        editions[_editionId].permissionedQuantity = _permissionedQuantity;
+        emit PermissionedQuantitySet(_editionId, _permissionedQuantity);
     }
 
     // ================================
@@ -394,7 +394,7 @@ contract ArtistV3 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
         require(success, 'Unable to send value: recipient may have reverted');
     }
 
-    /// @notice Gets signer address to validate presale purchase
+    /// @notice Gets signer address to validate permissioned purchase
     /// @param _signature signed message
     /// @param _editionId edition id
     /// @return address of signer
@@ -404,7 +404,7 @@ contract ArtistV3 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
             abi.encodePacked(
                 '\x19\x01',
                 keccak256(abi.encode(keccak256('EIP712Domain(uint256 chainId)'), block.chainid)),
-                keccak256(abi.encode(PRESALE_TYPEHASH, address(this), msg.sender, _editionId))
+                keccak256(abi.encode(PERMISSIONED_SALE_TYPEHASH, address(this), msg.sender, _editionId))
             )
         );
         address recoveredAddress = digest.recover(_signature);
