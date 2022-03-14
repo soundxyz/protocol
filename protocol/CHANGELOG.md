@@ -1,5 +1,15 @@
 # @soundxyz/protocol
 
+## 3.5.0
+
+### Minor Changes
+
+- ae13e3d: Bumps common package version
+
+### Patch Changes
+
+- 3ae1024: Lock file update
+
 ## 3.4.1
 
 ### Patch Changes
