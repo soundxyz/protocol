@@ -17,8 +17,6 @@ import {CountersUpgradeable} from '@openzeppelin/contracts-upgradeable/utils/Cou
 import {ArtistCreator} from './ArtistCreator.sol';
 import {ECDSA} from '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
 
-import 'hardhat/console.sol';
-
 /// @title Artist
 /// @author SoundXYZ - @gigamesh & @vigneshka
 /// @notice This contract is used to create & sell song NFTs for the artist who owns the contract.
@@ -408,7 +406,6 @@ contract ArtistV3 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
     /// @return address of signer
     /// @dev https://eips.ethereum.org/EIPS/eip-712
     function getSigner(bytes calldata _signature, uint256 _editionId) private view returns (address) {
-        console.logBytes32(DOMAIN_SEPARATOR);
         bytes32 digest = keccak256(
             abi.encodePacked(
                 '\x19\x01',
