@@ -256,7 +256,10 @@ export const auctionParams: Omit<
     price: ethers.utils.parseUnits('0.02', 'ether'),
     quantity: 30,
     royaltyBPS: 0,
-    startTime: ethers.BigNumber.from(0),
+    // some time in the next few days
+    startTime: ethers.BigNumber.from(
+      Math.floor(Date.now() / 1000) + Math.floor(Math.random() * 500_000),
+    ),
     endTime: ethers.BigNumber.from(MAX_UINT32),
   },
   {
