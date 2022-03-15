@@ -253,13 +253,17 @@ export const auctionParams: Omit<
   'releaseId' | 'title' | 'titleSlug' | 'imageKey' | 'goldenEggImageKey' | 'audioKey' | 'duration'
 >[] = [
   {
+    price: ethers.utils.parseUnits('0.1', 'ether'),
+    quantity: 25,
+    royaltyBPS: 1000,
+    startTime: ethers.BigNumber.from(Math.floor(Date.now() / 1000) + 86400),
+    endTime: ethers.BigNumber.from(MAX_UINT32),
+  },
+  {
     price: ethers.utils.parseUnits('0.02', 'ether'),
     quantity: 30,
-    royaltyBPS: 0,
-    // some time in the next few days
-    startTime: ethers.BigNumber.from(
-      Math.floor(Date.now() / 1000) + Math.floor(Math.random() * 500_000),
-    ),
+    royaltyBPS: 1000,
+    startTime: ethers.BigNumber.from(Math.floor(Date.now() / 1000)),
     endTime: ethers.BigNumber.from(MAX_UINT32),
   },
   {
