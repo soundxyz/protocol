@@ -366,6 +366,11 @@ export const creditSplits = [
       },
       {
         ownerAddress: usersData[9].publicAddress.toLowerCase(),
+        percent: 10,
+        roles: [CreditRole.CURATOR],
+      },
+      {
+        ownerAddress: usersData[10].publicAddress.toLowerCase(),
         percent: 9.31,
         roles: [CreditRole.CURATOR],
       },

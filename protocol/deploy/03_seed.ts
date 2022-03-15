@@ -176,6 +176,9 @@ const func: DeployFunction = async function ({ ethers, waffle, deployments }: Ha
 
     console.log({ editionId, releaseId });
 
+    // Skip buying if the auction hasn't started for this edition
+    if (startTime.mul(1000).gt(Date.now())) continue;
+
     // Buy the edition
     const buyer = signers[(+index + 1) % signers.length];
     const buyTx = await artistContract.connect(buyer).buyEdition(editionId, signerAddress, { value: price });
