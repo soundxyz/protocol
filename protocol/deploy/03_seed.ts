@@ -174,7 +174,7 @@ const func: DeployFunction = async function ({ ethers, waffle, deployments }: Ha
 
     const { editionId } = artistContract.interface.parseLog(receipt.events[0]).args;
 
-    console.log({ editionId, releaseId });
+    console.log({ editionId: editionId.toNumber(), startTime: new Date(startTime.toNumber() * 1000), releaseId });
 
     // Skip buying if the auction hasn't started for this edition
     if (startTime.mul(1000).gt(Date.now())) continue;
