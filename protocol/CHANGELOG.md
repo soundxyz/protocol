@@ -1,5 +1,18 @@
 # @soundxyz/protocol
 
+## 3.6.0
+
+### Minor Changes
+
+- ebe83a3: Fixes creditSplits allocations and seed script
+- e203bec: Adds edition to dummy editions
+
+### Patch Changes
+
+- Updated dependencies [ebe83a3]
+- Updated dependencies [e203bec]
+  - @soundxyz/common@2.5.0
+
 ## 3.5.0
 
 ### Minor Changes

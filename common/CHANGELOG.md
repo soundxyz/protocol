@@ -1,5 +1,12 @@
 # @soundxyz/common
 
+## 2.5.0
+
+### Minor Changes
+
+- ebe83a3: Fixes creditSplits allocations and seed script
+- e203bec: Adds edition to dummy editions
+
 ## 2.4.0
 
 ### Minor Changes
