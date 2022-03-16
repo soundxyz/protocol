@@ -303,13 +303,7 @@ contract ArtistV3 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
 
         uint256 editionId = tokenToEdition(_tokenId);
 
-        // If _tokenId is less than 2**128, it's a pre-V3 upgrade token and we can simply append it to the URI
-        if (_tokenId < 2**128) {
-            return string(abi.encodePacked(baseURI, editionId.toString(), '/', _tokenId.toString()));
-        }
-
-        // If _tokenId is larger than 2**128, it's a post-V3 upgrade token and we need to subtract the edition id to get the serial #
-        return string(abi.encodePacked(baseURI, editionId.toString(), '/', (_tokenId - (editionId << 128)).toString()));
+        return string(abi.encodePacked(baseURI, editionId.toString(), '/', _tokenId.toString()));
     }
 
     /// @notice Returns contract URI used by Opensea. e.g. https://sound.xyz/api/metadata/[artistId]/storefront
