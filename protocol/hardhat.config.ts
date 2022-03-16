@@ -1,3 +1,4 @@
+import './tasks/deploy-proxy';
 import './tasks/deploy-upgrade';
 import './tasks/get-beacon';
 import './tasks/nft-transfer';

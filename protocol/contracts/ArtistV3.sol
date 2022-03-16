@@ -116,7 +116,7 @@ contract ArtistV3 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
     // ================================
 
     /// @notice Contract constructor
-    constructor() public {
+    constructor() {
         DOMAIN_SEPARATOR = keccak256(abi.encode(keccak256('EIP712Domain(uint256 chainId)'), block.chainid));
     }
 
