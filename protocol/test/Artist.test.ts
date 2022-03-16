@@ -495,9 +495,28 @@ async function testArtistContract(deployContract: Function, name: string) {
       }
     });
 
-    it('increments the balance of the funding recipient', async () => {
+    it('increments the balance of the artist contract', async () => {
       const quantity = 5;
       await setUpContract({ quantity: BigNumber.from(quantity) });
+      const initialBalance = await provider.getBalance(artist.address);
+
+      for (let count = 1; count <= quantity; count++) {
+        const revenue = price.mul(count);
+        const currentBuyer = miscAccounts[count];
+        await artist.connect(currentBuyer).buyEdition(EDITION_ID, EMPTY_SIGNATURE, {
+          value: price,
+        });
+        const finalBalance = await provider.getBalance(artist.address);
+        expect(finalBalance.toString()).to.eq(revenue.add(initialBalance).toString());
+      }
+    });
+
+    it(`sends funds directly to fundingRecipient if not assigned to artist's wallet`, async () => {
+      const quantity = 5;
+      const fundingRecipient = miscAccounts[0];
+
+      await setUpContract({ quantity: BigNumber.from(quantity), fundingRecipient });
+
       const initialBalance = await provider.getBalance(fundingRecipient.address);
 
       for (let count = 1; count <= quantity; count++) {
@@ -507,7 +526,10 @@ async function testArtistContract(deployContract: Function, name: string) {
           value: price,
         });
         const finalBalance = await provider.getBalance(fundingRecipient.address);
+        const artistContractBalance = await provider.getBalance(artist.address);
+
         expect(finalBalance.toString()).to.eq(revenue.add(initialBalance).toString());
+        expect(artistContractBalance.toString()).to.eq('0');
       }
     });
 
@@ -635,7 +657,6 @@ async function testArtistContract(deployContract: Function, name: string) {
 
       // any address can call withdrawFunds
       await artist.connect(soundOwner).withdrawFunds(EDITION_ID);
-
       const contractBalance = await provider.getBalance(artist.address);
       // All the funds are extracted.
       await expect(contractBalance.toString()).to.eq('0');
