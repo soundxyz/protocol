@@ -558,7 +558,7 @@ function testArtistContract(deployContract: Function, name: string) {
 
         const tokenId = getTokenId(editionId, tokenSerialNum.toString());
         const resp = await artist.tokenURI(tokenId);
-        const tokenURI = `${BASE_URI}${EXAMPLE_ARTIST_ID}/${editionId}/${tokenSerialNum.toString()}`;
+        const tokenURI = `${BASE_URI}${EXAMPLE_ARTIST_ID}/${editionId}/${tokenId.toString()}`;
 
         await expect(resp).to.eq(tokenURI);
       }
