@@ -314,7 +314,6 @@ contract ArtistV3 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
 
     /// @notice Returns contract URI used by Opensea. e.g. https://sound.xyz/api/metadata/[artistId]/storefront
     function contractURI() public view returns (string memory) {
-        // Concatenate the components, baseURI, editionId and tokenId, to create URI.
         return string(abi.encodePacked(baseURI, 'storefront'));
     }
 
