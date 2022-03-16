@@ -283,8 +283,6 @@ contract ArtistV3 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
 
     /// @notice Sets the permissioned quantity for an edition
     function setPermissionedQuantity(uint256 _editionId, uint32 _permissionedQuantity) external onlyOwner {
-        // Check that the permissioned quantity is less than the total quantity
-        require(_permissionedQuantity < editions[_editionId].quantity + 1, 'Must not exceed quantity');
         // Prevent setting to permissioned quantity when there is no signer address
         require(editions[_editionId].signerAddress != address(0), 'Edition must have a signer');
 

@@ -801,14 +801,6 @@ function testArtistContract(deployContract: Function, name: string) {
       await expect(tx).to.be.revertedWith('Ownable: caller is not the owner');
     });
 
-    it('prevents attempt to set permissioned quantity higher than quantity', async () => {
-      await setUpContract({ quantity: BigNumber.from(69) });
-
-      const tx = artist.setPermissionedQuantity(EDITION_ID, 70);
-
-      expect(tx).to.be.revertedWith('Must not exceed quantity');
-    });
-
     it('prevents attempt to set permissioned quantity when there is no signer address', async () => {
       await setUpContract({ quantity: BigNumber.from(69), signer: null });
 
