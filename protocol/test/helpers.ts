@@ -70,7 +70,7 @@ export const deployArtistImplementation = async (deployer: SignerWithAddress) =>
   return protoArtist;
 };
 
-export const deployArtistProxy = async (artistEOA: SignerWithAddress, soundOwner: SignerWithAddress) => {
+export const deployArtistProxy = async (artistAccount: SignerWithAddress, soundOwner: SignerWithAddress) => {
   // Deploy & initialize ArtistCreator
   const ArtistCreator = await ethers.getContractFactory('ArtistCreator');
   const artistCreator = await ArtistCreator.connect(soundOwner).deploy();
@@ -93,14 +93,14 @@ export const deployArtistProxy = async (artistEOA: SignerWithAddress, soundOwner
 
   // Get sound.xyz signature to approve artist creation
   const signature = await getAuthSignature({
-    artistWalletAddr: artistEOA.address,
+    artistWalletAddr: artistAccount.address,
     privateKey: process.env.ADMIN_PRIVATE_KEY,
     chainId,
     provider,
   });
 
   const tx = await artistCreator
-    .connect(artistEOA)
+    .connect(artistAccount)
     .createArtist(signature, EXAMPLE_ARTIST_NAME, EXAMPLE_ARTIST_SYMBOL, BASE_URI);
   const receipt = await tx.wait();
   const contractAddress = receipt.events[3].args.artistAddress;

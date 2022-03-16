@@ -55,7 +55,7 @@ async function testArtistContract(deployContract: Function, name: string) {
   let eventData;
   let soundOwner: SignerWithAddress;
   let fundingRecipient: SignerWithAddress;
-  let artistEOA: SignerWithAddress;
+  let artistAccount: SignerWithAddress;
   let miscAccounts: SignerWithAddress[];
   let price: BigNumber;
   let quantity: BigNumber;
@@ -69,13 +69,13 @@ async function testArtistContract(deployContract: Function, name: string) {
     const editionCount = customConfig.editionCount || 1;
 
     const signers = await ethers.getSigners();
-    const [deployerAccount, artistAccount, ...otherAccounts] = signers;
-    soundOwner = deployerAccount;
-    artistEOA = artistAccount;
-    miscAccounts = otherAccounts;
-    fundingRecipient = customConfig.fundingRecipient || artistEOA;
+    const [deployer, artistSigner, ...others] = signers;
+    soundOwner = deployer;
+    artistAccount = artistSigner;
+    miscAccounts = others;
+    fundingRecipient = customConfig.fundingRecipient || artistAccount;
 
-    artist = await deployContract(artistEOA, soundOwner);
+    artist = await deployContract(artistAccount, soundOwner);
 
     price = customConfig.price || parseEther('0.1');
     quantity = customConfig.quantity || getRandomBN();
@@ -88,7 +88,7 @@ async function testArtistContract(deployContract: Function, name: string) {
     if (!customConfig.skipCreateEditions) {
       for (let i = 0; i < editionCount; i++) {
         const createEditionTx = await artist
-          .connect(artistEOA)
+          .connect(artistAccount)
           .createEdition(
             fundingRecipient.address,
             price,
@@ -197,7 +197,7 @@ async function testArtistContract(deployContract: Function, name: string) {
       quantity = BigNumber.from(69);
 
       const tx = artist
-        .connect(artistEOA)
+        .connect(artistAccount)
         .createEdition(
           fundingRecipient.address,
           price,
@@ -217,7 +217,7 @@ async function testArtistContract(deployContract: Function, name: string) {
 
       quantity = BigNumber.from(0);
       const tx = artist
-        .connect(artistEOA)
+        .connect(artistAccount)
         .createEdition(
           fundingRecipient.address,
           price,
@@ -237,7 +237,7 @@ async function testArtistContract(deployContract: Function, name: string) {
 
       const fundingRecipient = NULL_ADDRESS;
       const tx = artist
-        .connect(artistEOA)
+        .connect(artistAccount)
         .createEdition(
           fundingRecipient,
           price,
@@ -259,7 +259,7 @@ async function testArtistContract(deployContract: Function, name: string) {
       endTime = BigNumber.from(0);
 
       const tx = artist
-        .connect(artistEOA)
+        .connect(artistAccount)
         .createEdition(
           fundingRecipient.address,
           price,
@@ -278,8 +278,8 @@ async function testArtistContract(deployContract: Function, name: string) {
       await setUpContract({ skipCreateEditions: true });
 
       const tx = artist
-        .connect(artistEOA)
-        .createEdition(artistEOA.address, price, 2, royaltyBPS, startTime, endTime, 1, NULL_ADDRESS);
+        .connect(artistAccount)
+        .createEdition(artistAccount.address, price, 2, royaltyBPS, startTime, endTime, 1, NULL_ADDRESS);
 
       await expect(tx).to.be.revertedWith('Signer address cannot be 0');
     });
@@ -660,7 +660,7 @@ async function testArtistContract(deployContract: Function, name: string) {
 
     it('sets the start time for the edition', async () => {
       await setUpContract();
-      const tx = await artist.connect(artistEOA).setStartTime(EDITION_ID, newTime);
+      const tx = await artist.connect(artistAccount).setStartTime(EDITION_ID, newTime);
       await tx.wait();
       const editionInfo = await artist.editions(EDITION_ID);
       await expect(editionInfo.startTime.toString()).to.eq(newTime.toString());
@@ -668,7 +668,7 @@ async function testArtistContract(deployContract: Function, name: string) {
 
     it('emits event', async () => {
       await setUpContract();
-      const tx = await artist.connect(artistEOA).setStartTime(EDITION_ID, newTime);
+      const tx = await artist.connect(artistAccount).setStartTime(EDITION_ID, newTime);
       const receipt = await tx.wait();
       const event = receipt.events.find((e) => e.event === 'AuctionTimeSet');
 
@@ -691,7 +691,7 @@ async function testArtistContract(deployContract: Function, name: string) {
 
     it('sets the end time for the edition', async () => {
       await setUpContract();
-      const tx = await artist.connect(artistEOA).setEndTime(EDITION_ID, newTime);
+      const tx = await artist.connect(artistAccount).setEndTime(EDITION_ID, newTime);
       await tx.wait();
       const editionInfo = await artist.editions(EDITION_ID);
       await expect(editionInfo.endTime.toString()).to.eq(newTime.toString());
@@ -699,7 +699,7 @@ async function testArtistContract(deployContract: Function, name: string) {
 
     it('emits event', async () => {
       await setUpContract();
-      const tx = await artist.connect(artistEOA).setEndTime(EDITION_ID, newTime);
+      const tx = await artist.connect(artistAccount).setEndTime(EDITION_ID, newTime);
       const receipt = await tx.wait();
       const event = receipt.events.find((e) => e.event === 'AuctionTimeSet');
 
@@ -721,7 +721,7 @@ async function testArtistContract(deployContract: Function, name: string) {
     it('prevents attempt to set null address', async () => {
       await setUpContract();
 
-      const tx = artist.connect(artistEOA).setSignerAddress(EDITION_ID, NULL_ADDRESS);
+      const tx = artist.connect(artistAccount).setSignerAddress(EDITION_ID, NULL_ADDRESS);
 
       await expect(tx).to.be.revertedWith('Signer address cannot be 0');
     });
@@ -730,7 +730,7 @@ async function testArtistContract(deployContract: Function, name: string) {
       await setUpContract();
       const newSigner = miscAccounts[0];
 
-      const tx = await artist.connect(artistEOA).setSignerAddress(EDITION_ID, newSigner.address);
+      const tx = await artist.connect(artistAccount).setSignerAddress(EDITION_ID, newSigner.address);
       await tx.wait();
 
       const editionInfo = await artist.editions(EDITION_ID);
@@ -742,7 +742,7 @@ async function testArtistContract(deployContract: Function, name: string) {
       await setUpContract();
       const newSigner = miscAccounts[0];
 
-      const tx = await artist.connect(artistEOA).setSignerAddress(EDITION_ID, newSigner.address);
+      const tx = await artist.connect(artistAccount).setSignerAddress(EDITION_ID, newSigner.address);
       const receipt = await tx.wait();
       const event = receipt.events.find((e) => e.event === 'SignerAddressSet');
 
@@ -764,7 +764,7 @@ async function testArtistContract(deployContract: Function, name: string) {
     it('prevents attempt to set permissioned quantity higher than quantity', async () => {
       await setUpContract({ quantity: BigNumber.from(69) });
 
-      const tx = artist.connect(artistEOA).setPermissionedQuantity(EDITION_ID, 70);
+      const tx = artist.connect(artistAccount).setPermissionedQuantity(EDITION_ID, 70);
 
       expect(tx).to.be.revertedWith('Must not exceed quantity');
     });
@@ -772,7 +772,7 @@ async function testArtistContract(deployContract: Function, name: string) {
     it('prevents attempt to set permissioned quantity when there is no signer address', async () => {
       await setUpContract({ quantity: BigNumber.from(69), signer: null });
 
-      const tx = artist.connect(artistEOA).setPermissionedQuantity(EDITION_ID, 1);
+      const tx = artist.connect(artistAccount).setPermissionedQuantity(EDITION_ID, 1);
 
       expect(tx).to.be.revertedWith('Edition must have a signer');
     });
@@ -780,7 +780,7 @@ async function testArtistContract(deployContract: Function, name: string) {
     it('sets a new permissioned quantity for the edition', async () => {
       const newPermissionedQuantity = 420;
       await setUpContract({ quantity: BigNumber.from(420), permissionedQuantity: BigNumber.from(69) });
-      const tx = await artist.connect(artistEOA).setPermissionedQuantity(EDITION_ID, newPermissionedQuantity);
+      const tx = await artist.connect(artistAccount).setPermissionedQuantity(EDITION_ID, newPermissionedQuantity);
       await tx.wait();
 
       const editionInfo = await artist.editions(EDITION_ID);
@@ -791,7 +791,7 @@ async function testArtistContract(deployContract: Function, name: string) {
     it('emits event', async () => {
       const newPermissionedQuantity = 420;
       await setUpContract({ quantity: BigNumber.from(420), permissionedQuantity: BigNumber.from(69) });
-      const tx = await artist.connect(artistEOA).setPermissionedQuantity(EDITION_ID, newPermissionedQuantity);
+      const tx = await artist.connect(artistAccount).setPermissionedQuantity(EDITION_ID, newPermissionedQuantity);
       const receipt = await tx.wait();
 
       const event = receipt.events.find((e) => e.event === 'PermissionedQuantitySet');
