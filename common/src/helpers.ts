@@ -4,14 +4,14 @@ import type { Provider } from '@ethersproject/providers';
 
 type CreateArtistWhiteListArgs = {
   chainId: number;
-  deployerAddress: string;
+  artistWalletAddr: string;
   privateKey: string;
   provider: Provider;
 };
 
 export async function getAuthSignature({
   chainId,
-  deployerAddress,
+  artistWalletAddr,
   privateKey,
   provider,
 }: CreateArtistWhiteListArgs) {
@@ -26,7 +26,7 @@ export async function getAuthSignature({
   };
 
   const signature = await wallet._signTypedData(domainSeparator, types, {
-    artistWallet: deployerAddress,
+    artistWallet: artistWalletAddr,
   });
 
   return signature;
