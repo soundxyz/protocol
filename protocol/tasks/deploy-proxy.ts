@@ -18,7 +18,7 @@ task('deploy-proxy', 'Deploy Artist proxy & verify on etherscan')
 
     // Deploy an artist proxy via the ArtistCreator to verify
     const authSignature = await getAuthSignature({
-      deployerAddress: deployer.address,
+      artistWalletAddr: deployer.address,
       chainId,
       privateKey: process.env.ADMIN_PRIVATE_KEY as string,
       provider: ethers.provider,

@@ -61,7 +61,7 @@ const func: DeployFunction = async function ({ ethers, waffle, deployments }: Ha
     const currentArtist = signers[i];
 
     const authSignature = await getAuthSignature({
-      deployerAddress: currentArtist.address,
+      artistWalletAddr: currentArtist.address,
       chainId,
       privateKey: process.env.ADMIN_PRIVATE_KEY as string,
       provider: waffle.provider,

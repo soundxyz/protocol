@@ -241,8 +241,14 @@ contract ArtistV3 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
             editions[_editionId].numSold = numSold + 1;
         }
 
-        // Send funds to the funding recipient.
-        _sendFunds(editions[_editionId].fundingRecipient, msg.value);
+        // If fundingRecipient is the owner (artist's wallet), update the edition's balance & don't send the funds
+        if (editions[_editionId].fundingRecipient == owner()) {
+            // Update the deposited total for the edition
+            depositedForEdition[_editionId] += msg.value;
+        } else {
+            // Send funds to the funding recipient.
+            _sendFunds(editions[_editionId].fundingRecipient, msg.value);
+        }
 
         // Mint a new token for the sender, using the `tokenId`.
         _mint(msg.sender, tokenId);
