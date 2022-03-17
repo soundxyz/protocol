@@ -30,10 +30,10 @@ const func: DeployFunction = async function ({ ethers, waffle, deployments }: Ha
 
   //============= Upgrade to latest version of Artist.sol (only for local dev)==================//
 
-  console.log('Starting upgrade to V2');
+  console.log(`Starting upgrade to V${process.env.ARTIST_VERSION}`);
 
   // Deploy new implemntation
-  const ArtistFactory = await ethers.getContractFactory(`ArtistV2`);
+  const ArtistFactory = await ethers.getContractFactory(`ArtistV${process.env.ARTIST_VERSION}`);
   const artistUpgrade = await ArtistFactory.deploy();
   console.log('Deployment started:', artistUpgrade.deployTransaction.hash);
   const deployReceipt = await artistUpgrade.deployTransaction.wait();
@@ -61,7 +61,7 @@ const func: DeployFunction = async function ({ ethers, waffle, deployments }: Ha
     const currentArtist = signers[i];
 
     const authSignature = await getAuthSignature({
-      deployerAddress: currentArtist.address,
+      artistWalletAddr: currentArtist.address,
       chainId,
       privateKey: process.env.ADMIN_PRIVATE_KEY as string,
       provider: waffle.provider,
@@ -87,7 +87,7 @@ const func: DeployFunction = async function ({ ethers, waffle, deployments }: Ha
     addresses.dummyArtists = { ...addresses.dummyArtists, [artistDatum.soundHandle]: contractAddress };
   }
 
-  const artistArtifact = await deployments.getArtifact('ArtistV2');
+  const artistArtifact = await deployments.getArtifact(`ArtistV${process.env.ARTIST_VERSION}`);
   const beaconContract = await ethers.getContractAt('UpgradeableBeacon', beaconAddress, deployer);
   const implementationAddress = await beaconContract.implementation();
   console.log({ implementationAddress });

@@ -1,7 +1,8 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/dist/src/signers';
-import { helpers } from '@soundxyz/common';
+import { constants, helpers } from '@soundxyz/common';
 import { expect } from 'chai';
 import { BigNumber, Contract, utils } from 'ethers';
+import { parseUnits } from 'ethers/lib/utils';
 import { ethers, upgrades, waffle } from 'hardhat';
 
 import {
@@ -11,8 +12,12 @@ import {
   EXAMPLE_ARTIST_NAME,
   EXAMPLE_ARTIST_SYMBOL,
   getRandomBN,
+  getTokenId,
   MAX_UINT32,
+  NULL_ADDRESS,
 } from './helpers';
+
+const { baseURIs } = constants;
 
 enum TimeType {
   START = 0,
@@ -27,6 +32,7 @@ type CustomMintArgs = {
   editionCount?: number;
   royaltyBPS?: BigNumber;
   fundingRecipient?: SignerWithAddress;
+  version?: number;
 };
 
 const { provider } = waffle;
@@ -42,8 +48,8 @@ describe('Upgrades', () => {
   let recipientSigner: SignerWithAddress;
   let fundingRecipient: SignerWithAddress;
   let attackerSigners: SignerWithAddress[];
-  let artistV1Proxy: Contract;
-  let artistV2Proxy: Contract;
+  let artistPreUpgradeProxy: Contract;
+  let artistPostUpgradeProxy: Contract;
   let price: BigNumber;
   let quantity: BigNumber;
   let royaltyBPS: BigNumber;
@@ -66,10 +72,10 @@ describe('Upgrades', () => {
     );
 
     const receipt = await tx.wait();
-    const artistV1ProxyAddress = receipt.events[3].args.artistAddress;
-    artistV1Proxy = await ethers.getContractAt('Artist', artistV1ProxyAddress, artistWalletSigner);
+    const artistPreUpgradeProxyAddress = receipt.events[3].args.artistAddress;
+    artistPreUpgradeProxy = await ethers.getContractAt('Artist', artistPreUpgradeProxyAddress, artistWalletSigner);
 
-    const editionCount = customConfig.editionCount === 0 ? 0 : 1;
+    const editionCount = customConfig.editionCount ?? 1;
     fundingRecipient = customConfig.fundingRecipient || recipientSigner;
     price = customConfig.price || getRandomBN(MAX_UINT32);
     quantity = customConfig.quantity || getRandomBN();
@@ -78,12 +84,10 @@ describe('Upgrades', () => {
     endTime = customConfig.endTime || BigNumber.from(MAX_UINT32);
 
     // Create some editions
-    for (let i = 0; i < editionCount; i++) {
-      await artistV1Proxy.createEdition(fundingRecipient.address, price, quantity, royaltyBPS, startTime, endTime);
-    }
+    await createEditions(artistPreUpgradeProxy, editionCount);
   };
 
-  const upgradeArtistBeacon = async (contractVersion: string) => {
+  const upgradeArtistImplementation = async (contractVersion: string) => {
     // Deploy v2 artist implementation
     const ArtistNewVersion = await ethers.getContractFactory(contractVersion);
     const artistNewImpl = await ArtistNewVersion.deploy();
@@ -107,12 +111,22 @@ describe('Upgrades', () => {
     const artistPostUpgradeProxyAddress = receipt.events[3].args.artistAddress;
 
     // Reinstantiate v1 proxy
-    artistV1Proxy = await ethers.getContractAt(contractVersion, artistV1Proxy.address, artistWalletSigner);
+    artistPreUpgradeProxy = await ethers.getContractAt(
+      contractVersion,
+      artistPreUpgradeProxy.address,
+      artistWalletSigner
+    );
     // Instantiate v2 proxy
-    artistV2Proxy = await ethers.getContractAt(contractVersion, artistPostUpgradeProxyAddress, artistWalletSigner);
+    artistPostUpgradeProxy = await ethers.getContractAt(
+      contractVersion,
+      artistPostUpgradeProxyAddress,
+      artistWalletSigner
+    );
   };
 
   //================== Artist.sol ==================/
+
+  // ArtistV1 -> ArtistV2 TESTS
 
   describe('Artist.sol -> ArtistV2.sol', () => {
     describe('Artist proxy deployed before upgrade', () => {
@@ -120,14 +134,14 @@ describe('Upgrades', () => {
         await setUp();
 
         /// Purchase something before the upgrade to compare numSold
-        const tx = await artistV1Proxy.buyEdition(EDITION_ID, { value: price });
+        const tx = await artistPreUpgradeProxy.buyEdition(EDITION_ID, { value: price });
         await tx.wait();
-        const preUpgradeEditionInfo = await artistV1Proxy.editions(EDITION_ID);
+        const preUpgradeEditionInfo = await artistPreUpgradeProxy.editions(EDITION_ID);
 
         // Perform upgrade
-        await upgradeArtistBeacon('ArtistV2');
+        await upgradeArtistImplementation('ArtistV2');
 
-        const postUpgradeEditionInfo = await artistV1Proxy.editions(EDITION_ID);
+        const postUpgradeEditionInfo = await artistPreUpgradeProxy.editions(EDITION_ID);
 
         expect(postUpgradeEditionInfo.numSold).to.equal(preUpgradeEditionInfo.numSold);
         expect(postUpgradeEditionInfo.quantity).to.equal(preUpgradeEditionInfo.quantity);
@@ -140,8 +154,8 @@ describe('Upgrades', () => {
 
       it('storage includes new variables', async () => {
         await setUp();
-        await upgradeArtistBeacon('ArtistV2');
-        expect(await artistV1Proxy.PRESALE_TYPEHASH()).is.not.undefined;
+        await upgradeArtistImplementation('ArtistV2');
+        expect(await artistPreUpgradeProxy.PRESALE_TYPEHASH()).is.not.undefined;
       });
 
       it('returns correct royalty from royaltyInfo (fixes bug in v1)', async () => {
@@ -150,7 +164,7 @@ describe('Upgrades', () => {
 
         await setUp({ editionCount: 0 });
 
-        const edition1Tx = await artistV1Proxy.createEdition(
+        const edition1Tx = await artistPreUpgradeProxy.createEdition(
           fundingRecipient.address,
           price,
           quantity,
@@ -160,24 +174,24 @@ describe('Upgrades', () => {
         );
         await edition1Tx.wait();
 
-        const buy1Tx = await artistV1Proxy.buyEdition(1, { value: price });
+        const buy1Tx = await artistPreUpgradeProxy.buyEdition(1, { value: price });
         await buy1Tx.wait();
-        const buy2Tx = await artistV1Proxy.buyEdition(1, { value: price });
+        const buy2Tx = await artistPreUpgradeProxy.buyEdition(1, { value: price });
         await buy2Tx.wait();
 
         // At this point, there are 2 tokens bought from edition 1.
         // Calling royaltyInfo(2) should return nothing because editionId 2 hasn't been created.
-        const royaltyInfoPreUpgrade = await artistV1Proxy.royaltyInfo(2, saleAmount);
+        const royaltyInfoPreUpgrade = await artistPreUpgradeProxy.royaltyInfo(2, saleAmount);
 
         // Verify pre-upgrade royaltyInfo is null
         expect(royaltyInfoPreUpgrade.fundingRecipient).to.equal('0x0000000000000000000000000000000000000000');
         expect(royaltyInfoPreUpgrade.royaltyAmount).to.equal(BigNumber.from(0));
 
         // Perform upgrade
-        await upgradeArtistBeacon('ArtistV2');
+        await upgradeArtistImplementation('ArtistV2');
 
         // Calling royaltyInfo(2) should return data because royaltyInfo is now fixed and tokenId 2 has been created.
-        const royaltyInfoPostUpgrade = await artistV1Proxy.royaltyInfo(2, saleAmount);
+        const royaltyInfoPostUpgrade = await artistPreUpgradeProxy.royaltyInfo(2, saleAmount);
 
         // Verify post-upgrade royaltyInfo is correct
         const expectedRoyalty = saleAmount.mul(edition1Royalty).div(10_000);
@@ -187,38 +201,38 @@ describe('Upgrades', () => {
 
       it('emits event from setStartTime', async () => {
         await setUp();
-        await upgradeArtistBeacon('ArtistV2');
-        await setStartTimeTest(artistV1Proxy);
+        await upgradeArtistImplementation('ArtistV2');
+        await setStartTimeTest(artistPreUpgradeProxy);
       });
 
       it('emits event from setEndTime', async () => {
         await setUp();
-        await upgradeArtistBeacon('ArtistV2');
-        await setEndTimeTest(artistV1Proxy);
+        await upgradeArtistImplementation('ArtistV2');
+        await setEndTimeTest(artistPreUpgradeProxy);
       });
 
       it('requires signature for presale purchases', async () => {
         await setUp({ editionCount: 0 });
-        await upgradeArtistBeacon('ArtistV2');
-        await rejectPresalePurchaseTest(artistV1Proxy);
+        await upgradeArtistImplementation('ArtistV2');
+        await rejectPresalePurchaseTest(artistPreUpgradeProxy);
       });
 
       it('sells open sale NFTs', async () => {
         await setUp();
-        await upgradeArtistBeacon('ArtistV2');
-        await openSalePurchaseTest(artistV1Proxy);
+        await upgradeArtistImplementation('ArtistV2');
+        await openSalePurchaseTest(artistPreUpgradeProxy);
       });
 
       it('sells NFTs of v1 editions after an upgrade', async () => {
         await setUp();
 
-        await artistV1Proxy.buyEdition(EDITION_ID, { value: price });
+        await artistPreUpgradeProxy.buyEdition(EDITION_ID, { value: price });
 
-        await upgradeArtistBeacon('ArtistV2');
+        await upgradeArtistImplementation('ArtistV2');
 
-        const tx = await artistV1Proxy.buyEdition(EDITION_ID, EMPTY_SIGNATURE, { value: price });
+        const tx = await artistPreUpgradeProxy.buyEdition(EDITION_ID, EMPTY_SIGNATURE, { value: price });
         const receipt = await tx.wait();
-        const totalSupply = await artistV1Proxy.totalSupply();
+        const totalSupply = await artistPreUpgradeProxy.totalSupply();
 
         expect(receipt.status).to.equal(1);
         expect(totalSupply.toNumber()).to.equal(2);
@@ -228,14 +242,14 @@ describe('Upgrades', () => {
     describe('Artist proxy deployed after upgrade', () => {
       it('returns correct royalty from royaltyInfo (fixes bug in v1)', async () => {
         await setUp({ editionCount: 0 });
-        await upgradeArtistBeacon('ArtistV2');
+        await upgradeArtistImplementation('ArtistV2');
 
         const edition1Royalty = BigNumber.from(69);
         const saleAmount = utils.parseUnits('1.0', 'ether');
 
         const presaleQuantity = 1;
         const signerAddress = soundOwnerSigner.address;
-        const editionTx = await artistV2Proxy.createEdition(
+        const editionTx = await artistPostUpgradeProxy.createEdition(
           fundingRecipient.address,
           price,
           quantity,
@@ -256,16 +270,16 @@ describe('Upgrades', () => {
           provider,
           editionId: EDITION_ID,
           privateKey: process.env.ADMIN_PRIVATE_KEY,
-          contractAddress: artistV2Proxy.address,
+          contractAddress: artistPostUpgradeProxy.address,
           buyerAddress: buyer.address,
         });
 
-        const buy1Tx = await artistV2Proxy.connect(buyer).buyEdition(1, signature, { value: price });
+        const buy1Tx = await artistPostUpgradeProxy.connect(buyer).buyEdition(1, signature, { value: price });
         await buy1Tx.wait();
-        const buy2Tx = await artistV2Proxy.connect(buyer).buyEdition(1, signature, { value: price });
+        const buy2Tx = await artistPostUpgradeProxy.connect(buyer).buyEdition(1, signature, { value: price });
         await buy2Tx.wait();
 
-        const royaltyInfo = await artistV2Proxy.royaltyInfo(2, saleAmount);
+        const royaltyInfo = await artistPostUpgradeProxy.royaltyInfo(2, saleAmount);
 
         const expectedRoyalty = saleAmount.mul(edition1Royalty).div(10_000);
 
@@ -276,43 +290,150 @@ describe('Upgrades', () => {
 
       it('emits event from setStartTime', async () => {
         await setUp();
-        await upgradeArtistBeacon('ArtistV2');
-        await setStartTimeTest(artistV2Proxy);
+        await upgradeArtistImplementation('ArtistV2');
+        await setStartTimeTest(artistPostUpgradeProxy);
       });
 
       it('emits event from setEndTime', async () => {
         await setUp();
-        await upgradeArtistBeacon('ArtistV2');
-        await setEndTimeTest(artistV2Proxy);
+        await upgradeArtistImplementation('ArtistV2');
+        await setEndTimeTest(artistPostUpgradeProxy);
       });
 
       it('requires signature for presale purchases', async () => {
         await setUp({ editionCount: 0 });
-        await upgradeArtistBeacon('ArtistV2');
-        await rejectPresalePurchaseTest(artistV2Proxy);
+        await upgradeArtistImplementation('ArtistV2');
+        await rejectPresalePurchaseTest(artistPostUpgradeProxy);
       });
 
       it('sells open sale NFTs', async () => {
         await setUp();
-        await upgradeArtistBeacon('ArtistV2');
-        await openSalePurchaseTest(artistV2Proxy);
+        await upgradeArtistImplementation('ArtistV2');
+        await openSalePurchaseTest(artistPostUpgradeProxy);
+      });
+    });
+  });
+
+  // ArtistV2 -> ArtistV3 TESTS
+
+  describe('ArtistV2.sol -> ArtistV3.sol', () => {
+    describe('Artist proxy deployed before upgrade', () => {
+      it('returns expected tokenURI', async () => {
+        const editionCount = 5;
+        await setUp({ editionCount });
+        await upgradeArtistImplementation('ArtistV3');
+        await tokenURITest(artistPreUpgradeProxy, editionCount);
+      });
+
+      it('returns expected totalSupply', async () => {
+        const editionCount = 5;
+        const tokenQuantity = 10;
+        await setUp({ editionCount });
+        await upgradeArtistImplementation('ArtistV3');
+        await totalSupplyTest(artistPreUpgradeProxy, editionCount, tokenQuantity);
+      });
+
+      it('returns expected edition id from tokenToEdition', async () => {
+        const editionCount = 5;
+        const tokenQuantity = 10;
+        await setUp({ editionCount });
+
+        // Create and buy editions before upgrade
+        for (let currentEditionId = 1; currentEditionId <= editionCount; currentEditionId++) {
+          for (let tokenSerialNum = 1; tokenSerialNum <= tokenQuantity; tokenSerialNum++) {
+            // Buy token of edition
+            await artistPreUpgradeProxy.buyEdition(currentEditionId, { value: price });
+          }
+        }
+
+        // perform upgrade
+        await upgradeArtistImplementation('ArtistV3');
+
+        // Check data after upgrade
+        let tokenId = 0;
+        for (let currentEditionId = 1; currentEditionId <= editionCount; currentEditionId++) {
+          for (let tokenSerialNum = 1; tokenSerialNum <= tokenQuantity; tokenSerialNum++) {
+            tokenId++;
+
+            const editionId = await artistPreUpgradeProxy.tokenToEdition(tokenId);
+
+            expect(editionId.toNumber()).to.equal(currentEditionId);
+          }
+        }
       });
     });
 
-    describe('v3 upgrade with new storage variables', () => {
-      it('pre-upgrade contracts return new data', async () => {
+    describe('Artist proxy deployed after upgrade', () => {
+      it('returns expected tokenURI', async () => {
+        const editionCount = 5;
+        await setUp({ editionCount });
+        await upgradeArtistImplementation('ArtistV3');
+        await tokenURITest(artistPostUpgradeProxy, editionCount, true);
+      });
+
+      it('returns expected totalSupply', async () => {
+        const editionCount = 5;
+        const tokenQuantity = 10;
+        await setUp({ editionCount });
+        await upgradeArtistImplementation('ArtistV3');
+        await totalSupplyTest(artistPostUpgradeProxy, editionCount, tokenQuantity, true);
+      });
+
+      it('returns expected edition id from tokenToEdition', async () => {
+        const editionCount = 5;
+        const tokenQuantity = 10;
         await setUp();
-        await upgradeArtistBeacon('ArtistV2');
-        await upgradeArtistBeacon('ArtistV3Test');
+        await upgradeArtistImplementation('ArtistV3');
 
-        const SOME_NUMBER = 103979370;
-        const tx = await artistV1Proxy.setSomeNumber(SOME_NUMBER);
-        await tx.wait();
-        const someNumber = await artistV1Proxy.someNumber();
-        expect(someNumber).to.equal(SOME_NUMBER);
+        await createEditions(artistPostUpgradeProxy, editionCount, true);
 
-        const helloWorld = await artistV1Proxy.helloWorld();
-        expect(helloWorld).to.equal('hello world');
+        for (let currentEditionId = 1; currentEditionId <= editionCount; currentEditionId++) {
+          for (let tokenSerialNum = 1; tokenSerialNum <= tokenQuantity; tokenSerialNum++) {
+            // Buy token of edition
+            await artistPostUpgradeProxy.buyEdition(currentEditionId, EMPTY_SIGNATURE, { value: price });
+
+            const tokenId = getTokenId(currentEditionId, tokenSerialNum);
+            const editionId = await artistPostUpgradeProxy.tokenToEdition(tokenId);
+
+            expect(editionId.toNumber()).to.equal(currentEditionId);
+          }
+        }
+      });
+    });
+  });
+
+  // ArtistV2 -> ArtistV3 TESTS
+
+  describe('ArtistV2.sol -> ArtistV3.sol', () => {
+    describe('Artist proxy deployed before upgrade', () => {
+      it('can withdraw ETH after upgrade', async () => {
+        await setUp();
+        const initialBalance = await provider.getBalance(fundingRecipient.address);
+
+        await artistPreUpgradeProxy.buyEdition(EDITION_ID, { value: price });
+
+        await upgradeArtistImplementation('ArtistV3');
+
+        await artistPreUpgradeProxy.withdrawFunds(EDITION_ID);
+
+        const postUpgradeBalance = await provider.getBalance(fundingRecipient.address);
+
+        expect(initialBalance.add(price).toString()).to.equal(postUpgradeBalance.toString());
+      });
+
+      it('sends ETH to funding recipient from buy edition transactions after upgrade', async () => {
+        await setUp();
+        const initialBalance = await provider.getBalance(fundingRecipient.address);
+
+        await upgradeArtistImplementation('ArtistV3');
+
+        const price = parseUnits('42');
+
+        await artistPreUpgradeProxy.buyEdition(EDITION_ID, EMPTY_SIGNATURE, { value: price });
+
+        const postBuyBalance = await provider.getBalance(fundingRecipient.address);
+
+        expect(initialBalance.add(price).toString()).to.equal(postBuyBalance.toString());
       });
     });
   });
@@ -342,7 +463,7 @@ describe('Upgrades', () => {
       const artistCreatorV2 = await upgrades.upgradeProxy(artistCreator.address, ArtistCreator);
       await artistCreatorV2.deployed();
 
-      const ArtistCreatorV3Test = await ethers.getContractFactory('ArtistCreatorV3Test');
+      const ArtistCreatorV3Test = await ethers.getContractFactory('ArtistCreatorUpgradeTest');
       const artistCreatorV3 = await upgrades.upgradeProxy(artistCreator.address, ArtistCreatorV3Test);
       await artistCreatorV3.deployed();
 
@@ -430,5 +551,52 @@ describe('Upgrades', () => {
     const receipt = await tx.wait();
 
     expect(receipt.status).to.equal(1);
+  };
+
+  const tokenURITest = async (artistContract: Contract, editionCount: number, isPostUpgradeProxy?: boolean) => {
+    for (let editionId; editionId < editionCount; editionId++) {
+      const tokenSerialNum = 1;
+
+      // Buy token of edition
+      await artistContract.buyEdition(editionId, EMPTY_SIGNATURE, { value: price });
+      const tokenId = isPostUpgradeProxy ? getTokenId(EDITION_ID, tokenSerialNum) : tokenSerialNum;
+      const tokenURI = await artistContract.tokenURI(tokenId);
+
+      expect(tokenURI).to.equal(`${baseURIs.hardhat}${EDITION_ID}/${tokenSerialNum}`);
+    }
+  };
+
+  const totalSupplyTest = async (
+    artistContract: Contract,
+    editionCount: number,
+    quantity: number,
+    isPostUpgradeProxy?: boolean
+  ) => {
+    if (isPostUpgradeProxy) {
+      await createEditions(artistContract, editionCount, true);
+    }
+
+    for (let editionId = 1; editionId <= editionCount; editionId++) {
+      for (let tokenSerialNum = 1; tokenSerialNum <= quantity; tokenSerialNum++) {
+        // Buy token of edition
+        await artistContract.buyEdition(editionId, EMPTY_SIGNATURE, { value: price });
+      }
+    }
+    const totalSupply = await artistContract.totalSupply();
+
+    expect(totalSupply.toNumber()).to.equal(editionCount * quantity);
+  };
+
+  const createEditions = async (artistContract: Contract, editionCount: number, postV2?: boolean) => {
+    const args: any[] = [fundingRecipient.address, price, quantity, royaltyBPS, startTime, endTime];
+
+    if (postV2) {
+      args.push(0); // presaleQuantity
+      args.push(NULL_ADDRESS); // signerAddress
+    }
+
+    for (let i = 0; i < editionCount; i++) {
+      await artistContract.createEdition(...args);
+    }
   };
 });

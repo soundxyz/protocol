@@ -15,9 +15,9 @@
     "build:hh": "hardhat compile --force",
     "clean": "rm -rf artifacts cache dist",
     "deploy-upgrade": "hardhat deploy-upgrade",
-    "deploy:local": "hardhat node",
-    "deploy:mainnet": "hardhat --network mainnet deploy",
-    "deploy:rinkeby": "hardhat --network rinkeby deploy",
+    "deploy:local": "ARTIST_VERSION=3 hardhat node",
+    "deploy:mainnet": "ARTIST_VERSION=3 hardhat --network mainnet deploy",
+    "deploy:rinkeby": "ARTIST_VERSION=3 hardhat --network rinkeby deploy",
     "prepack": "pnpm -w build && bob-tsm build.ts",
     "postpublish": "gh-release",
     "seed:rinkeby": "DEPLOY_SEED_DATA=true pnpm deploy:rinkeby",
@@ -29,6 +29,7 @@
     "verify": "hardhat verify-contract"
   },
   "dependencies": {
+    "@ethersproject/units": "^5.6.0",
     "@nomiclabs/hardhat-ethers": "npm:hardhat-deploy-ethers@0.3.0-beta.11",
     "@nomiclabs/hardhat-etherscan": "^2.1.6",
     "@nomiclabs/hardhat-solhint": "^2.0.0",
