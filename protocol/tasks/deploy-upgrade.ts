@@ -1,17 +1,20 @@
+import { constants } from '@soundxyz/common';
 import { task } from 'hardhat/config';
 
 const MAX_GAS_PRICE = 150_000_000_000; // wei
+const { baseURIs } = constants;
 
 task('deploy-upgrade', 'Deploys an upgraded Artist.sol')
   .addParam('artistVersion', 'The version number of the new Artist.sol implementation')
   // .addParam('gasPrice', 'The gas price to use for the transaction')
   .setAction(async (args, hardhat) => {
+    const baseURI = baseURIs[hardhat.network.name];
     const dummyArgsForArtistInit = [
       '0xB0A36b3CeDf210f37a5E7BC28d4b8E91D4E3C412', // rinkeby deployer address
       '0',
       `Sound.xyz ArtistV${args.artistVersion}.sol`,
       `SOUND V${args.artistVersion}`,
-      'https://sound.xyz/api/metadata/',
+      baseURI,
     ];
 
     const { ethers, network } = hardhat;

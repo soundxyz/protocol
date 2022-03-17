@@ -253,10 +253,17 @@ export const auctionParams: Omit<
   'releaseId' | 'title' | 'titleSlug' | 'imageKey' | 'goldenEggImageKey' | 'audioKey' | 'duration'
 >[] = [
   {
+    price: ethers.utils.parseUnits('0.1', 'ether'),
+    quantity: 25,
+    royaltyBPS: 1000,
+    startTime: ethers.BigNumber.from(Math.floor(Date.now() / 1000) + 86400),
+    endTime: ethers.BigNumber.from(MAX_UINT32),
+  },
+  {
     price: ethers.utils.parseUnits('0.02', 'ether'),
     quantity: 30,
-    royaltyBPS: 0,
-    startTime: ethers.BigNumber.from(0),
+    royaltyBPS: 1000,
+    startTime: ethers.BigNumber.from(Math.floor(Date.now() / 1000)),
     endTime: ethers.BigNumber.from(MAX_UINT32),
   },
   {
@@ -363,6 +370,11 @@ export const creditSplits = [
       },
       {
         ownerAddress: usersData[9].publicAddress.toLowerCase(),
+        percent: 10,
+        roles: [CreditRole.CURATOR],
+      },
+      {
+        ownerAddress: usersData[10].publicAddress.toLowerCase(),
         percent: 9.31,
         roles: [CreditRole.CURATOR],
       },

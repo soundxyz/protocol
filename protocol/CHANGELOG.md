@@ -1,5 +1,34 @@
 # @soundxyz/protocol
 
+## 3.6.0
+
+### Minor Changes
+
+- ebe83a3: Fixes creditSplits allocations and seed script
+- e203bec: Adds edition to dummy editions
+
+### Patch Changes
+
+- Updated dependencies [ebe83a3]
+- Updated dependencies [e203bec]
+  - @soundxyz/common@2.5.0
+
+## 3.5.0
+
+### Minor Changes
+
+- ae13e3d: Bumps common package version
+
+### Patch Changes
+
+- 3ae1024: Lock file update
+
+## 3.4.1
+
+### Patch Changes
+
+- 62d59dd: Comments out mainnet in hardhat.config
+
 ## 3.4.0
 
 ### Minor Changes

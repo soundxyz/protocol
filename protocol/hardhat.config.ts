@@ -1,3 +1,4 @@
+import './tasks/deploy-proxy';
 import './tasks/deploy-upgrade';
 import './tasks/get-beacon';
 import './tasks/nft-transfer';
@@ -85,10 +86,11 @@ const config: HardhatUserConfig = {
         mnemonic: process.env.MNEMONIC,
       },
     },
-    mainnet: {
-      url: `https://eth-mainnet.alchemyapi.io/v2/${process.env.NEXT_PUBLIC_ALCHEMY_KEY}`,
-      accounts: [process.env.ADMIN_PRIVATE_KEY!],
-    },
+    // TODO: figure out why this breaks the build ("Error: could not detect network (event="noNetwork", code=NETWORK_ERROR")
+    // mainnet: {
+    //   url: `https://eth-mainnet.alchemyapi.io/v2/${process.env.NEXT_PUBLIC_ALCHEMY_KEY}`,
+    //   accounts: [process.env.ADMIN_PRIVATE_KEY!],
+    // },
   },
   paths: {
     deployments: 'src/deployments',

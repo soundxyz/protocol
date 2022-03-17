@@ -1,4 +1,4 @@
-import { constants, helpers } from '@soundxyz/common';
+import { constants } from '@soundxyz/common';
 import * as dotenv from 'dotenv';
 import { ethers } from 'ethers';
 import { DeployFunction } from 'hardhat-deploy/types';
@@ -14,7 +14,6 @@ type ContractConfig = {
 };
 
 const { NETWORK_MAP } = constants;
-const { getAuthSignature } = helpers;
 const MAX_GAS_PRICE = 140_000_000_000; // wei
 const gasLimits = {
   ARTIST_CREATOR_INIT: 3_000_000,
@@ -29,7 +28,7 @@ const func: DeployFunction = async function ({ ethers, deployments, network, run
   const dummyArgsForArtistInit = [
     deployer.address,
     '1',
-    'Sound.xyz Artist.sol',
+    'Sound.xyz',
     'IMPLEMENTATION',
     'https://sound.xyz/api/metadata/',
   ];
@@ -119,10 +118,8 @@ const func: DeployFunction = async function ({ ethers, deployments, network, run
   // only allow rinkeby -- switch to mainnet manually when needed
   if (chainId !== 1337 && process.env.VERIFY_ETHERSCAN) {
     const contracts: ContractConfig[] = [];
-
     const creatorImpAddress = artistCreatorImp.address;
 
-    // Verify ArtistCreator
     contracts.push({
       proxy: artistCreator.address,
       implementation: creatorImpAddress,
@@ -130,52 +127,17 @@ const func: DeployFunction = async function ({ ethers, deployments, network, run
       contractPath: 'contracts/ArtistCreatorProxy.sol:ArtistCreatorProxy',
     });
 
-    if (chainId === 1) {
-      console.log('Connected to mainnet. Skipping Artist.sol proxy deployment for etherscan verification.');
-    } else {
-      // Deploy an artist proxy via the ArtistCreator to verify
-      const authSignature = await getAuthSignature({
-        deployerAddress: deployer.address,
-        chainId,
-        privateKey: process.env.ADMIN_PRIVATE_KEY as string,
-        provider: ethers.provider,
-      });
-
-      const artistCreatorContract = await ethers.getContractAt('ArtistCreator', artistCreator.address, deployer);
-      const artistDeployTx = await artistCreatorContract.createArtist(
-        authSignature,
-        ...dummyArgsForArtistInit.slice(2),
-        {
-          gasLimit: 1_000_000,
-        }
-      );
-      const receipt = await artistDeployTx.wait();
-      const artistProxyAddress = receipt.events[3].args.artistAddress;
-
-      // Gather arguments for the artist BeaconProxy
-      const artistArtifact = await deployments.getArtifact('Artist');
-      const iface = new ethers.utils.Interface(artistArtifact.abi);
-      const functionSelector = iface.encodeFunctionData('initialize', dummyArgsForArtistInit);
-      const beaconConstructorArgs = [artistBeaconAddress, functionSelector];
-
-      contracts.push({
-        proxy: artistProxyAddress,
-        implementation: artistImplAddress,
-        args: beaconConstructorArgs,
-      });
-    }
-
     // Verify everything on etherscan (wait 30 sec for etherscan to process it first)
     console.log('\nWaiting for etherscan to index the bytecode...');
     await new Promise((res) => setTimeout(res, 30_000));
 
     for (const contract of contracts) {
-      // verify implementation
-      console.log('Verifying implementation:', contract.implementation);
-      await verifyContract(contract.implementation);
       // verify proxy
       console.log('Verifying proxy:', contract.proxy);
       await verifyContract(contract.proxy, contract.args, contract.contractPath);
+      // verify implementation
+      console.log('Verifying implementation:', contract.implementation);
+      await verifyContract(contract.implementation);
     }
   }
 
@@ -193,7 +155,7 @@ const func: DeployFunction = async function ({ ethers, deployments, network, run
         verified = true;
       } catch (err) {
         console.log(err);
-        if (attempts > 1 || err.message === 'Contract source code already verified') {
+        if (attempts > 1 || err.message.toLowerCase().includes('already verified')) {
           break;
         } else {
           console.log('\nWaiting 5 seconds...');

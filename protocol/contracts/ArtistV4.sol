@@ -12,7 +12,7 @@ pragma solidity 0.8.7;
 import {IERC2981Upgradeable, IERC165Upgradeable} from '@openzeppelin/contracts-upgradeable/interfaces/IERC2981Upgradeable.sol';
 import {ERC721Upgradeable} from '@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol';
 import {OwnableUpgradeable} from '@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol';
-import {Strings} from './Strings.sol';
+import {LibUintToString} from './LibUintToString.sol';
 import {CountersUpgradeable} from '@openzeppelin/contracts-upgradeable/utils/CountersUpgradeable.sol';
 import {ArtistCreator} from './ArtistCreator.sol';
 import {ECDSA} from '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
@@ -26,7 +26,7 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
     // TYPES
     // ================================
 
-    using Strings for uint256;
+    using LibUintToString for uint256;
     using CountersUpgradeable for CountersUpgradeable.Counter;
     using ECDSA for bytes32;
 
@@ -52,8 +52,8 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
         uint32 startTime;
         // end timestamp of auction (in seconds since unix epoch)
         uint32 endTime;
-        // quantity of presale tokens
-        uint32 presaleQuantity;
+        // quantity of permissioned tokens
+        uint32 permissionedQuantity;
         // whitelist signer address
         address signerAddress;
     }
@@ -75,9 +75,11 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
     mapping(uint256 => uint256) public depositedForEdition;
     // <DEPRECATED IN V3> The amount of funds that have already been withdrawn for a given edition.
     mapping(uint256 => uint256) public withdrawnForEdition;
-    // The presale typehash (used for checking signature validity)
-    bytes32 public constant PRESALE_TYPEHASH =
+    // The permissioned typehash (used for checking signature validity)
+    bytes32 private constant PERMISSIONED_SALE_TYPEHASH =
         keccak256('EditionInfo(address contractAddress,address buyerAddress,uint256 editionId,uint256 ticketNumber)');
+    // Domain separator - used to prevent replay attacks using signatures from different networks
+    bytes32 private immutable DOMAIN_SEPARATOR;
     // Used to track which tokens have been claimed. editionId -> index -> max int bit array
     mapping(uint256 => mapping(uint256 => uint256)) ticketNumbers;
 
@@ -93,7 +95,7 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
         uint32 royaltyBPS,
         uint32 startTime,
         uint32 endTime,
-        uint32 presaleQuantity,
+        uint32 permissionedQuantity,
         address signerAddress
     );
 
@@ -110,11 +112,16 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
 
     event SignerAddressSet(uint256 editionId, address indexed signerAddress);
 
-    event PresaleQuantitySet(uint256 editionId, uint32 presaleQuantity);
+    event PermissionedQuantitySet(uint256 editionId, uint32 permissionedQuantity);
 
     // ================================
     // PUBLIC & EXTERNAL WRITABLE FUNCTIONS
     // ================================
+
+    /// @notice Contract constructor
+    constructor() {
+        DOMAIN_SEPARATOR = keccak256(abi.encode(keccak256('EIP712Domain(uint256 chainId)'), block.chainid));
+    }
 
     /// @notice Initializes the contract
     /// @param _owner Owner of edition
@@ -135,9 +142,6 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
         // E.g. https://sound.xyz/api/metadata/[artistId]/
         baseURI = string(abi.encodePacked(_baseURI, _artistId.toString(), '/'));
 
-        // Set token id start to be 1 not 0
-        atTokenId.increment();
-
         // Set edition id start to be 1 not 0
         atEditionId.increment();
     }
@@ -149,7 +153,7 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
     /// @param _royaltyBPS The royalty amount in bps.
     /// @param _startTime The start time of the auction, in seconds since unix epoch.
     /// @param _endTime The end time of the auction, in seconds since unix epoch.
-    /// @param _presaleQuantity The quantity of presale tokens.
+    /// @param _permissionedQuantity The quantity of tokens that require a signature to buy.
     /// @param _signerAddress signer address.
     function createEdition(
         address payable _fundingRecipient,
@@ -158,19 +162,18 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
         uint32 _royaltyBPS,
         uint32 _startTime,
         uint32 _endTime,
-        uint32 _presaleQuantity,
+        uint32 _permissionedQuantity,
         address _signerAddress
     ) external onlyOwner {
-        // get current edition id
-        uint256 currentEditionId = atEditionId.current();
+        require(_quantity > 0, 'Must set quantity');
+        require(_fundingRecipient != address(0), 'Must set fundingRecipient');
+        require(_endTime > _startTime, 'End time must be greater than start time');
 
-        // Presale checks
-        if (_presaleQuantity > 0) {
-            // Must provide signer address if setting a presale quantity
+        if (_permissionedQuantity > 0) {
             require(_signerAddress != address(0), 'Signer address cannot be 0');
         }
 
-        editions[currentEditionId] = Edition({
+        editions[atEditionId.current()] = Edition({
             fundingRecipient: _fundingRecipient,
             price: _price,
             numSold: 0,
@@ -178,19 +181,19 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
             royaltyBPS: _royaltyBPS,
             startTime: _startTime,
             endTime: _endTime,
-            presaleQuantity: _presaleQuantity,
+            permissionedQuantity: _permissionedQuantity,
             signerAddress: _signerAddress
         });
 
         emit EditionCreated(
-            currentEditionId,
+            atEditionId.current(),
             _fundingRecipient,
             _price,
             _quantity,
             _royaltyBPS,
             _startTime,
             _endTime,
-            _presaleQuantity,
+            _permissionedQuantity,
             _signerAddress
         );
 
@@ -199,7 +202,8 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
 
     /// @notice Creates a new token for the given edition, and assigns it to the buyer
     /// @param _editionId The id of the edition to purchase
-    /// @param _signature A signed message for authorizing presale purchases
+    /// @param _signature A signed message for authorizing permissioned purchases
+    /// @param _ticketNumber Ticket number required for validating this buyer hasn't already bought.
     function buyEdition(
         uint256 _editionId,
         bytes calldata _signature,
@@ -212,7 +216,7 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
         uint32 newNumSold = numSold + 1;
         uint32 startTime = editions[_editionId].startTime;
         uint32 endTime = editions[_editionId].endTime;
-        uint32 presaleQuantity = editions[_editionId].presaleQuantity;
+        uint32 permissionedQuantity = editions[_editionId].permissionedQuantity;
 
         // Check that the edition exists. Note: this is redundant
         // with the next check, but it is useful for clearer error messaging.
@@ -222,8 +226,11 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
 
         // If the public auction hasn't started...
         if (startTime > block.timestamp) {
-            // Check that presale tokens are still available
-            require(presaleQuantity > 0, 'No presale available & public auction not started');
+            // Check that permissioned tokens are still available
+            require(
+                permissionedQuantity > 0 && numSold < permissionedQuantity,
+                'No permissioned tokens available & open auction not started'
+            );
 
             // Check that the signature is valid.
             require(
@@ -248,8 +255,14 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
             editions[_editionId].numSold = newNumSold;
         }
 
-        // Send funds to the funding recipient.
-        _sendFunds(editions[_editionId].fundingRecipient, msg.value);
+        // If fundingRecipient is the owner (artist's wallet), update the edition's balance & don't send the funds
+        if (editions[_editionId].fundingRecipient == owner()) {
+            // Update the deposited total for the edition
+            depositedForEdition[_editionId] += msg.value;
+        } else {
+            // Send funds to the funding recipient.
+            _sendFunds(editions[_editionId].fundingRecipient, msg.value);
+        }
 
         // Mint a new token for the sender, using the `tokenId`.
         _mint(msg.sender, tokenId);
@@ -288,13 +301,13 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
         emit SignerAddressSet(_editionId, _newSignerAddress);
     }
 
-    /// @notice Sets the presale quantity for an edition
-    function setPresaleQuantity(uint256 _editionId, uint32 _presaleQuantity) external onlyOwner {
-        // Check that the presale quantity is less than the total quantity
-        require(_presaleQuantity < editions[_editionId].quantity + 1, 'Must not exceed quantity');
+    /// @notice Sets the permissioned quantity for an edition
+    function setPermissionedQuantity(uint256 _editionId, uint32 _permissionedQuantity) external onlyOwner {
+        // Prevent setting to permissioned quantity when there is no signer address
+        require(editions[_editionId].signerAddress != address(0), 'Edition must have a signer');
 
-        editions[_editionId].presaleQuantity = _presaleQuantity;
-        emit PresaleQuantitySet(_editionId, _presaleQuantity);
+        editions[_editionId].permissionedQuantity = _permissionedQuantity;
+        emit PermissionedQuantitySet(_editionId, _permissionedQuantity);
     }
 
     // ================================
@@ -308,18 +321,11 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
 
         uint256 editionId = tokenToEdition(_tokenId);
 
-        // If _tokenId is less than 2**128, it's a pre-V3 upgrade token and we can simply append it to the URI
-        if (_tokenId < 2**128) {
-            return string(abi.encodePacked(baseURI, editionId.toString(), '/', _tokenId.toString()));
-        }
-
-        // If _tokenId is larger than 2**128, it's a post-V3 upgrade token and we need to subtract the edition id to get the serial #
-        return string(abi.encodePacked(baseURI, editionId.toString(), '/', (_tokenId - (editionId << 128)).toString()));
+        return string(abi.encodePacked(baseURI, editionId.toString(), '/', _tokenId.toString()));
     }
 
     /// @notice Returns contract URI used by Opensea. e.g. https://sound.xyz/api/metadata/[artistId]/storefront
     function contractURI() public view returns (string memory) {
-        // Concatenate the components, baseURI, editionId and tokenId, to create URI.
         return string(abi.encodePacked(baseURI, 'storefront'));
     }
 
@@ -405,7 +411,7 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
         require(success, 'Unable to send value: recipient may have reverted');
     }
 
-    /// @notice Gets signer address to validate presale purchase
+    /// @notice Gets signer address to validate permissioned purchase
     /// @param _signature signed message
     /// @param _editionId edition id
     /// @return address of signer
@@ -454,8 +460,8 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
         bytes32 digest = keccak256(
             abi.encodePacked(
                 '\x19\x01',
-                keccak256(abi.encode(keccak256('EIP712Domain(uint256 chainId)'), block.chainid)),
-                keccak256(abi.encode(PRESALE_TYPEHASH, address(this), msg.sender, _editionId, _ticketNumber))
+                DOMAIN_SEPARATOR,
+                keccak256(abi.encode(PERMISSIONED_SALE_TYPEHASH, address(this), msg.sender, _editionId, _ticketNumber))
             )
         );
         return digest.recover(_signature);
