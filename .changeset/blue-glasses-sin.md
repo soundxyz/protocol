@@ -1,5 +1,5 @@
 ---
-'@soundxyz/protocol': minor
+'@soundxyz/protocol': major
 ---
 
 - Bitpacks editionId into top bits of tokenId
