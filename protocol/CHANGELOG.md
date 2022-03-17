@@ -1,5 +1,17 @@
 # @soundxyz/protocol
 
+## 4.0.0
+
+### Major Changes
+
+- a3fd3c0: - Bitpacks editionId into top bits of tokenId
+  - Deprecates atTokenId and in favor of bit-packed editionId with tokenId
+  - Adds presale quantity and signature setters
+  - Adds editionCount view function
+  - Sends ETH directly to fundingRecipient during buyEdition call
+- c04d8cc: Adds ownersOfTokenIds view function
+- c6b99d0: Misc optimizations + changes "presale" to "permissioned"
+
 ## 3.6.0
 
 ### Minor Changes
