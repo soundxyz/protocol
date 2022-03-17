@@ -363,7 +363,8 @@ async function testArtistContract(deployContract: Function, name: string) {
       });
 
       await expect(receipt.status).to.equal(1);
-      await expect(tx2).to.be.revertedWith('Invalid ticket number or NFT already claimed');
+
+      await expect(tx2).to.be.revertedWith('No permissioned tokens available & open auction not started');
     });
 
     it(`enables open editions: signed purchases can exceed quantity prior to the public sale start time`, async () => {
@@ -692,19 +693,21 @@ async function testArtistContract(deployContract: Function, name: string) {
     });
 
     it(`allows purchase during permissioned sale`, async () => {
-      await setUpContract({ quantity: BigNumber.from(2), permissionedQuantity: BigNumber.from(1) });
-      const buyer = miscAccounts[0];
-      const chainId = (await provider.getNetwork()).chainId;
-
       const quantity = 10;
+      const permissionedQuantity = 10;
+      await setUpContract({
+        quantity: BigNumber.from(quantity),
+        permissionedQuantity: BigNumber.from(permissionedQuantity),
+      });
+
       for (let i = 0; i < quantity; i++) {
-        const ticketNumber = getRandomInt().toString();
-        // console.log({ ticketNumber });
+        const buyer = miscAccounts[i];
+        const ticketNumber = i + 1;
         const signature = await getPresaleSignature({
           chainId,
           provider,
           editionId: EDITION_ID,
-          ticketNumber,
+          ticketNumber: ticketNumber.toString(),
           privateKey: process.env.ADMIN_PRIVATE_KEY,
           contractAddress: artist.address,
           buyerAddress: buyer.address,
@@ -712,7 +715,6 @@ async function testArtistContract(deployContract: Function, name: string) {
 
         const tx = await artist.connect(buyer).buyEdition(EDITION_ID, signature, ticketNumber, { value: price });
         const receipt = await tx.wait();
-        // console.log({ receipt });
         await expect(receipt.status).to.equal(1);
       }
     });
@@ -1118,7 +1120,8 @@ async function testArtistContract(deployContract: Function, name: string) {
       for (let count = 1; count <= quantity; count++) {
         const revenue = price.mul(count);
         const currentBuyer = miscAccounts[count];
-        await artist.connect(currentBuyer).buyEdition(EDITION_ID, EMPTY_SIGNATURE, {
+        const ticketNumber = count;
+        await artist.connect(currentBuyer).buyEdition(EDITION_ID, EMPTY_SIGNATURE, ticketNumber, {
           value: price,
         });
         const contractBalance = await provider.getBalance(artist.address);

@@ -227,10 +227,7 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
         // If the public auction hasn't started...
         if (startTime > block.timestamp) {
             // Check that permissioned tokens are still available
-            require(
-                permissionedQuantity > 0 && numSold < permissionedQuantity,
-                'No permissioned tokens available & open auction not started'
-            );
+            require(numSold < permissionedQuantity, 'No permissioned tokens available & open auction not started');
 
             // Check that the signature is valid.
             require(
