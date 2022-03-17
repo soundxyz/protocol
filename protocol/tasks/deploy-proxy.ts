@@ -5,7 +5,7 @@ const { getAuthSignature } = helpers;
 
 task('deploy-proxy', 'Deploy Artist proxy & verify on etherscan')
   .addParam('artistVersion', 'Artist.sol version number')
-  .setAction(async (args, hardhat, network) => {
+  .setAction(async (args, hardhat) => {
     const { ethers, run, deployments } = hardhat;
 
     if (!args.artistVersion) {
@@ -31,7 +31,7 @@ task('deploy-proxy', 'Deploy Artist proxy & verify on etherscan')
       gasLimit: 1_000_000,
     });
 
-    console.log(`Deployed ${contractName} on ${network.name}. Tx hash: ${artistDeployTx.hash}`);
+    console.log(`Deployed ${contractName} on ${hardhat.network.name}. Tx hash: ${artistDeployTx.hash}`);
     console.log('Waiting for 5 network confirmations...');
 
     const receipt = await artistDeployTx.wait(5);
