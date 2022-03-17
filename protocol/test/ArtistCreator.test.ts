@@ -108,7 +108,7 @@ describe('ArtistCreator', () => {
       for (let i = 0; i < 10; i++) {
         const artistEOA = artistEOAs[i];
         const signature = await getAuthSignature({
-          deployerAddress: `0xDeadDeAddeAddEAddeadDEaDDEAdDeaDDeAD0000`,
+          artistWalletAddr: `0xDeadDeAddeAddEAddeadDEaDDEAdDeaDDeAD0000`,
           privateKey: process.env.ADMIN_PRIVATE_KEY,
           chainId,
           provider,
