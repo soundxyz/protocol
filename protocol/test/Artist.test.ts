@@ -984,4 +984,35 @@ async function testArtistContract(deployContract: Function, name: string) {
       await expect(ownersResponse).to.be.revertedWith('ERC721: owner query for nonexistent token');
     });
   });
+
+  describe('end-to-end', () => {
+    it(`successful buy and withdraw`, async () => {
+      const quantity = 10;
+      await setUpContract({ quantity: BigNumber.from(quantity) });
+
+      const artistWalletInitBalance = await provider.getBalance(fundingRecipient.address);
+      const artistContractInitBalance = await provider.getBalance(artist.address);
+
+      for (let count = 1; count <= quantity; count++) {
+        const revenue = price.mul(count);
+        const currentBuyer = miscAccounts[count];
+        await artist.connect(currentBuyer).buyEdition(EDITION_ID, EMPTY_SIGNATURE, {
+          value: price,
+        });
+        const contractBalance = await provider.getBalance(artist.address);
+        await expect(contractBalance.toString()).to.eq(revenue.add(artistContractInitBalance).toString());
+      }
+
+      // using soundOwner to withdraw so we don't have to encorporate gas fee when making assertions
+      await artist.connect(soundOwner).withdrawFunds(EDITION_ID);
+
+      const postWithdrawBalance = await provider.getBalance(artist.address);
+      const recipientBalance = await provider.getBalance(fundingRecipient.address);
+      const totalRevenue = price.mul(quantity);
+
+      // All the funds are withdrawn
+      await expect(postWithdrawBalance.toString()).to.eq('0');
+      await expect(recipientBalance.toString()).to.eq(artistWalletInitBalance.add(totalRevenue));
+    });
+  });
 }
