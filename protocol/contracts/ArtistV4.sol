@@ -80,7 +80,7 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
         keccak256('EditionInfo(address contractAddress,address buyerAddress,uint256 editionId,uint256 ticketNumber)');
     // Domain separator - used to prevent replay attacks using signatures from different networks
     bytes32 private immutable DOMAIN_SEPARATOR;
-    // Used to track which tokens have been claimed. editionId -> index -> max int bit array
+    // Used to track which tokens have been claimed. editionId -> index -> bit array
     mapping(uint256 => mapping(uint256 => uint256)) ticketNumbers;
 
     // ================================
@@ -421,7 +421,7 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
         // Check that the ticket number is within the reserved range for the edition
         require(_ticketNumber < 2**128, 'Ticket number exceeds max');
 
-        uint256 localGroup; // the max int bit array for this ticket number
+        uint256 localGroup; // the bit array for this ticket number
         uint256 ticketNumbersIdx; // the index of the the local group
         uint256 localGroupOffset; // the offset/index for the ticket number in the local group
         uint256 storedBit; // the stored bit at this ticket number's index within the local group

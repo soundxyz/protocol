@@ -22,7 +22,7 @@ import {
   INVALID_PRIVATE_KEY,
   MAX_UINT32,
   NULL_ADDRESS,
-  NULL_TOKEN_ID,
+  NULL_TICKET_NUM,
 } from './helpers';
 
 type CustomMintArgs = {
@@ -295,7 +295,7 @@ async function testArtistContract(deployContract: Function, name: string) {
   describe('buyEdition', () => {
     it(`reverts with "Edition does not exist" when expected`, async () => {
       await setUpContract();
-      const tx = artist.connect(miscAccounts[0]).buyEdition('69420', EMPTY_SIGNATURE, NULL_TOKEN_ID, {
+      const tx = artist.connect(miscAccounts[0]).buyEdition('69420', EMPTY_SIGNATURE, NULL_TICKET_NUM, {
         value: price,
       });
       await expect(tx).to.be.revertedWith('Edition does not exist');
@@ -306,12 +306,12 @@ async function testArtistContract(deployContract: Function, name: string) {
       await setUpContract({ quantity: BigNumber.from(quantity) });
 
       for (let i = 1; i <= quantity; i++) {
-        await artist.connect(miscAccounts[i]).buyEdition(EDITION_ID, EMPTY_SIGNATURE, NULL_TOKEN_ID, {
+        await artist.connect(miscAccounts[i]).buyEdition(EDITION_ID, EMPTY_SIGNATURE, NULL_TICKET_NUM, {
           value: price,
         });
       }
 
-      const tx = artist.connect(miscAccounts[quantity + 1]).buyEdition(EDITION_ID, EMPTY_SIGNATURE, NULL_TOKEN_ID, {
+      const tx = artist.connect(miscAccounts[quantity + 1]).buyEdition(EDITION_ID, EMPTY_SIGNATURE, NULL_TICKET_NUM, {
         value: price,
       });
       await expect(tx).to.be.revertedWith('This edition is already sold out');
@@ -325,7 +325,7 @@ async function testArtistContract(deployContract: Function, name: string) {
 
       const purchaser = miscAccounts[0];
 
-      const tx = artist.connect(purchaser).buyEdition(EDITION_ID, EMPTY_SIGNATURE, NULL_TOKEN_ID, {
+      const tx = artist.connect(purchaser).buyEdition(EDITION_ID, EMPTY_SIGNATURE, NULL_TICKET_NUM, {
         value: price,
       });
       await expect(tx).to.be.revertedWith(`No permissioned tokens available & open auction not started`);
@@ -466,7 +466,7 @@ async function testArtistContract(deployContract: Function, name: string) {
     it(`reverts with "Auction has ended" when expected`, async () => {
       await setUpContract({ endTime: BigNumber.from(currentSeconds() - 1) });
       const purchaser = miscAccounts[0];
-      const tx = artist.connect(purchaser).buyEdition(EDITION_ID, EMPTY_SIGNATURE, NULL_TOKEN_ID, {
+      const tx = artist.connect(purchaser).buyEdition(EDITION_ID, EMPTY_SIGNATURE, NULL_TICKET_NUM, {
         value: price,
       });
       await expect(tx).to.be.revertedWith(`Auction has ended`);
@@ -557,7 +557,7 @@ async function testArtistContract(deployContract: Function, name: string) {
 
       const buyer = miscAccounts[0];
 
-      const tx = await artist.connect(buyer).buyEdition(EDITION_ID, EMPTY_SIGNATURE, NULL_TOKEN_ID, {
+      const tx = await artist.connect(buyer).buyEdition(EDITION_ID, EMPTY_SIGNATURE, NULL_TICKET_NUM, {
         value: price,
       });
       const receipt = await tx.wait();
@@ -568,7 +568,7 @@ async function testArtistContract(deployContract: Function, name: string) {
     it(`creates an event log for the purchase`, async () => {
       await setUpContract();
       const purchaser = miscAccounts[0];
-      const tx = await artist.connect(purchaser).buyEdition(EDITION_ID, EMPTY_SIGNATURE, NULL_TOKEN_ID, {
+      const tx = await artist.connect(purchaser).buyEdition(EDITION_ID, EMPTY_SIGNATURE, NULL_TICKET_NUM, {
         value: price,
       });
       const receipt = await tx.wait();
@@ -589,7 +589,7 @@ async function testArtistContract(deployContract: Function, name: string) {
       let editionData;
 
       for (let count = 1; count <= quantity; count++) {
-        await artist.connect(miscAccounts[count]).buyEdition(EDITION_ID, EMPTY_SIGNATURE, NULL_TOKEN_ID, {
+        await artist.connect(miscAccounts[count]).buyEdition(EDITION_ID, EMPTY_SIGNATURE, NULL_TICKET_NUM, {
           value: price,
         });
         editionData = await artist.editions(EDITION_ID);
@@ -603,7 +603,7 @@ async function testArtistContract(deployContract: Function, name: string) {
 
       for (let tokenSerialNum = 1; tokenSerialNum < quantity; tokenSerialNum++) {
         const currentBuyer = miscAccounts[tokenSerialNum];
-        await artist.connect(miscAccounts[tokenSerialNum]).buyEdition(EDITION_ID, EMPTY_SIGNATURE, NULL_TOKEN_ID, {
+        await artist.connect(miscAccounts[tokenSerialNum]).buyEdition(EDITION_ID, EMPTY_SIGNATURE, NULL_TICKET_NUM, {
           value: price,
         });
         const tokenId = getTokenId(EDITION_ID, tokenSerialNum);
@@ -620,7 +620,7 @@ async function testArtistContract(deployContract: Function, name: string) {
       for (let count = 1; count <= quantity; count++) {
         const revenue = price.mul(count);
         const currentBuyer = miscAccounts[count];
-        await artist.connect(currentBuyer).buyEdition(EDITION_ID, EMPTY_SIGNATURE, NULL_TOKEN_ID, {
+        await artist.connect(currentBuyer).buyEdition(EDITION_ID, EMPTY_SIGNATURE, NULL_TICKET_NUM, {
           value: price,
         });
         const finalBalance = await provider.getBalance(artist.address);
@@ -639,7 +639,7 @@ async function testArtistContract(deployContract: Function, name: string) {
       for (let count = 1; count <= quantity; count++) {
         const revenue = price.mul(count);
         const currentBuyer = miscAccounts[count];
-        await artist.connect(currentBuyer).buyEdition(EDITION_ID, EMPTY_SIGNATURE, NULL_TOKEN_ID, {
+        await artist.connect(currentBuyer).buyEdition(EDITION_ID, EMPTY_SIGNATURE, NULL_TICKET_NUM, {
           value: price,
         });
         const finalBalance = await provider.getBalance(fundingRecipient.address);
@@ -659,7 +659,7 @@ async function testArtistContract(deployContract: Function, name: string) {
       for (let tokenSerialNum = 1; tokenSerialNum < quantity; tokenSerialNum++) {
         const currentBuyer = miscAccounts[tokenSerialNum % miscAccounts.length];
 
-        await artist.connect(currentBuyer).buyEdition(editionId, EMPTY_SIGNATURE, NULL_TOKEN_ID, {
+        await artist.connect(currentBuyer).buyEdition(editionId, EMPTY_SIGNATURE, NULL_TICKET_NUM, {
           value: price,
         });
 
@@ -686,7 +686,7 @@ async function testArtistContract(deployContract: Function, name: string) {
         buyerAddress: buyer.address,
       });
 
-      const tx = await artist.connect(buyer).buyEdition(EDITION_ID, signature, NULL_TOKEN_ID, { value: price });
+      const tx = await artist.connect(buyer).buyEdition(EDITION_ID, signature, NULL_TICKET_NUM, { value: price });
       const receipt = await tx.wait();
 
       await expect(receipt.status).to.equal(1);
@@ -738,7 +738,7 @@ async function testArtistContract(deployContract: Function, name: string) {
       const purchase1 = await artist.connect(buyer).buyEdition(EDITION_ID, signature, ticketNumber, { value: price });
       await purchase1.wait();
 
-      const purchase2 = await artist.buyEdition(EDITION_ID, EMPTY_SIGNATURE, NULL_TOKEN_ID, { value: price });
+      const purchase2 = await artist.buyEdition(EDITION_ID, EMPTY_SIGNATURE, NULL_TICKET_NUM, { value: price });
       const purchase2Receipt = await purchase2.wait();
 
       await expect(purchase2Receipt.status).to.equal(1);
@@ -763,7 +763,7 @@ async function testArtistContract(deployContract: Function, name: string) {
       const purchase1 = await artist.connect(buyer).buyEdition(EDITION_ID, signature, ticketNumber, { value: price });
       await purchase1.wait();
 
-      const purchase2 = await artist.buyEdition(EDITION_ID, signature, NULL_TOKEN_ID, { value: price });
+      const purchase2 = await artist.buyEdition(EDITION_ID, signature, NULL_TICKET_NUM, { value: price });
       const purchase2Receipt = await purchase2.wait();
 
       await expect(purchase2Receipt.status).to.equal(1);
@@ -779,7 +779,7 @@ async function testArtistContract(deployContract: Function, name: string) {
 
       for (let count = 1; count <= quantity; count++) {
         const currentBuyer = miscAccounts[count];
-        await artist.connect(currentBuyer).buyEdition(EDITION_ID, EMPTY_SIGNATURE, NULL_TOKEN_ID, {
+        await artist.connect(currentBuyer).buyEdition(EDITION_ID, EMPTY_SIGNATURE, NULL_TICKET_NUM, {
           value: price,
         });
       }
@@ -1025,7 +1025,7 @@ async function testArtistContract(deployContract: Function, name: string) {
       await setUpContract();
       const [receiver, buyer] = miscAccounts;
 
-      await artist.connect(buyer).buyEdition(EDITION_ID, EMPTY_SIGNATURE, NULL_TOKEN_ID, {
+      await artist.connect(buyer).buyEdition(EDITION_ID, EMPTY_SIGNATURE, NULL_TICKET_NUM, {
         value: price,
       });
 
@@ -1041,7 +1041,7 @@ async function testArtistContract(deployContract: Function, name: string) {
       await setUpContract();
       const [receiver, buyer] = miscAccounts;
 
-      await artist.connect(buyer).buyEdition(EDITION_ID, EMPTY_SIGNATURE, NULL_TOKEN_ID, {
+      await artist.connect(buyer).buyEdition(EDITION_ID, EMPTY_SIGNATURE, NULL_TICKET_NUM, {
         value: price,
       });
 
@@ -1056,7 +1056,7 @@ async function testArtistContract(deployContract: Function, name: string) {
       const [receiver, buyer] = miscAccounts;
       const TOKEN_COUNT = '1';
 
-      await artist.connect(buyer).buyEdition(EDITION_ID, EMPTY_SIGNATURE, NULL_TOKEN_ID, {
+      await artist.connect(buyer).buyEdition(EDITION_ID, EMPTY_SIGNATURE, NULL_TICKET_NUM, {
         value: price,
       });
 
@@ -1084,7 +1084,7 @@ async function testArtistContract(deployContract: Function, name: string) {
       for (let tokenId = 1; tokenId <= totalQuantity; tokenId++) {
         let currentEditionId = (tokenId % editionCount) + 1; // loops through editions
         const currentBuyer = miscAccounts[tokenId % miscAccounts.length];
-        await artist.connect(currentBuyer).buyEdition(currentEditionId, EMPTY_SIGNATURE, NULL_TOKEN_ID, {
+        await artist.connect(currentBuyer).buyEdition(currentEditionId, EMPTY_SIGNATURE, NULL_TICKET_NUM, {
           value: price,
         });
         const totalSupply = await artist.totalSupply();
