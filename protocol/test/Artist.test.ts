@@ -943,6 +943,82 @@ async function testArtistContract(deployContract: Function, name: string) {
     });
   });
 
+  describe('setSignerAddress', () => {
+    it('only allows owner to call function', async () => {
+      await setUpContract();
+
+      const tx = artist.connect(miscAccounts[0]).setSignerAddress(EDITION_ID, NULL_ADDRESS);
+
+      await expect(tx).to.be.revertedWith('Ownable: caller is not the owner');
+    });
+
+    it('prevents attempt to set null address', async () => {
+      await setUpContract();
+
+      const tx = artist.connect(artistAccount).setSignerAddress(EDITION_ID, NULL_ADDRESS);
+
+      await expect(tx).to.be.revertedWith('Signer address cannot be 0');
+    });
+
+    it('sets a new signer address for the edition', async () => {
+      await setUpContract();
+      const newSigner = miscAccounts[0];
+
+      const tx = await artist.connect(artistAccount).setSignerAddress(EDITION_ID, newSigner.address);
+      await tx.wait();
+
+      const editionInfo = await artist.editions(EDITION_ID);
+
+      await expect(editionInfo.signerAddress).to.equal(newSigner.address);
+    });
+
+    it('emits event', async () => {
+      await setUpContract();
+      const newSigner = miscAccounts[0];
+
+      const tx = await artist.connect(artistAccount).setSignerAddress(EDITION_ID, newSigner.address);
+      const receipt = await tx.wait();
+      const event = receipt.events.find((e) => e.event === 'SignerAddressSet');
+
+      expect(event.args.editionId.toString()).to.eq(EDITION_ID);
+      expect(event.args.signerAddress).to.eq(newSigner.address);
+    });
+  });
+
+  describe('setPermissionedQuantity', () => {
+    it('only allows owner to call function', async () => {
+      await setUpContract();
+      const notOwner = miscAccounts[0];
+
+      const tx = artist.connect(notOwner).setPermissionedQuantity(EDITION_ID, 69);
+
+      await expect(tx).to.be.revertedWith('Ownable: caller is not the owner');
+    });
+
+    it('sets a new permissioned quantity for the edition', async () => {
+      const newPermissionedQuantity = 420;
+      await setUpContract({ quantity: BigNumber.from(420), permissionedQuantity: BigNumber.from(69) });
+      const tx = await artist.connect(artistAccount).setPermissionedQuantity(EDITION_ID, newPermissionedQuantity);
+      await tx.wait();
+
+      const editionInfo = await artist.editions(EDITION_ID);
+
+      await expect(editionInfo.permissionedQuantity.toString()).to.equal(newPermissionedQuantity.toString());
+    });
+
+    it('emits event', async () => {
+      const newPermissionedQuantity = 420;
+      await setUpContract({ quantity: BigNumber.from(420), permissionedQuantity: BigNumber.from(69) });
+      const tx = await artist.connect(artistAccount).setPermissionedQuantity(EDITION_ID, newPermissionedQuantity);
+      const receipt = await tx.wait();
+
+      const event = receipt.events.find((e) => e.event === 'PermissionedQuantitySet');
+
+      await expect(event.args.editionId.toString()).to.equal(EDITION_ID);
+      await expect(event.args.permissionedQuantity.toString()).to.equal(newPermissionedQuantity.toString());
+    });
+  });
+
   describe('getApproved', () => {
     it('returns the receiver address', async () => {
       const TOKEN_COUNT = '1';
