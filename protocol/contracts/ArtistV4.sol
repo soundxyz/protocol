@@ -430,28 +430,15 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
             localGroupOffset = _ticketNumber % 256;
         }
 
-        // Revert if local group offset is 0 because index 0 of every group is reserved for the magic init bit
-        require(localGroupOffset != 0, 'Invalid ticket number');
-
         // cache the local group for efficiency
         localGroup = ticketNumbers[_editionId][ticketNumbersIdx];
-
-        /**
-         * This is a reserved bit stored at the start of the local group that indicates whether or not the max int (local group) has been initialized
-         * If it is 0, the current buyer pays the cost to initialize the group.
-         */
-        uint256 magicInitBit = localGroup & uint256(1);
-
-        if (magicInitBit == 0) {
-            localGroup = type(uint256).max;
-        }
 
         // gets the stored bit
         storedBit = (localGroup >> localGroupOffset) & uint256(1);
 
-        require(storedBit == 1, 'Invalid ticket number or NFT already claimed');
+        require(storedBit == 0, 'Invalid ticket number or NFT already claimed');
 
-        // set the bit to 0 to indicate that the ticket has been claimed
+        // Flip the bit to 1 to indicate that the ticket has been claimed
         ticketNumbers[_editionId][ticketNumbersIdx] = localGroup & ~(uint256(1) << localGroupOffset);
 
         bytes32 digest = keccak256(
