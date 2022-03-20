@@ -71,9 +71,9 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
     mapping(uint256 => Edition) public editions;
     // <DEPRECATED IN V3> Mapping of token id to edition id.
     mapping(uint256 => uint256) private _tokenToEdition;
-    // <DEPRECATED IN V3> The amount of funds that have been deposited for a given edition.
+    // The amount of funds that have been deposited for a given edition.
     mapping(uint256 => uint256) public depositedForEdition;
-    // <DEPRECATED IN V3> The amount of funds that have already been withdrawn for a given edition.
+    // The amount of funds that have already been withdrawn for a given edition.
     mapping(uint256 => uint256) public withdrawnForEdition;
     // The permissioned typehash (used for checking signature validity)
     bytes32 private constant PERMISSIONED_SALE_TYPEHASH =
