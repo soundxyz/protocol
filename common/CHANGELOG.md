@@ -1,5 +1,11 @@
 # @soundxyz/common
 
+## 2.5.1
+
+### Patch Changes
+
+- e704ce2: Fixing last publish
+
 ## 2.5.0
 
 ### Minor Changes

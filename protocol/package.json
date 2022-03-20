@@ -1,6 +1,6 @@
 {
   "name": "@soundxyz/protocol",
-  "version": "4.0.0",
+  "version": "4.0.1",
   "repository": {
     "type": "git",
     "url": "https://github.com/soundxyz/protocol-public"
@@ -38,7 +38,7 @@
     "@openzeppelin/contracts-upgradeable": "^4.4.0",
     "@openzeppelin/hardhat-upgrades": "^1.12.0",
     "@rari-capital/solmate": "^6.2.0",
-    "@soundxyz/common": "workspace:^2.5.0",
+    "@soundxyz/common": "workspace:^2.5.1",
     "@typechain/ethers-v5": "^7.1.0",
     "@typechain/hardhat": "^2.3.0",
     "dotenv": "^16.0.0",
