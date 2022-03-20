@@ -1,5 +1,13 @@
 # @soundxyz/protocol
 
+## 4.0.1
+
+### Patch Changes
+
+- f3126f6: Removes errant comments
+- Updated dependencies [e704ce2]
+  - @soundxyz/common@2.5.1
+
 ## 4.0.0
 
 ### Major Changes
