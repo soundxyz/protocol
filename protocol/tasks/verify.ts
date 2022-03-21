@@ -15,8 +15,12 @@ task('verify-contract', 'Verify a contract')
     const { ethers, run, deployments } = hardhat;
     const { name, address, contract, artistVersion } = args;
 
-    if (name.toLowerCase().includes('artist') && !artistVersion) {
-      throw new Error(`Invalid Artist contract name: ${name}. Must have a version number`);
+    console.log({ artistVersion });
+
+    if (!artistVersion && (name === 'BeaconProxy' || name.toLowerCase().includes('artist'))) {
+      throw new Error(
+        `Invalid Artist contract name: ${name}. Must supply a version number, --artist-verision <versionNum>`
+      );
     }
 
     console.log({ name, address, contract });
@@ -28,10 +32,10 @@ task('verify-contract', 'Verify a contract')
     if (name === 'BeaconProxy') {
       const baseURI = baseURIs[hardhat.network.name];
       const argsForArtistInit = [
-        '0xFC4504Dbf85F3D783b4cCD42De8697ce1df20eA2', // deployer address
-        '1',
-        `Gigaaaa`,
-        `GigAAAA`,
+        '0x955B6F06981d77f947F4d44CA4297D2e26a916d7', // owner/deployer address
+        '28',
+        `Pussy Riot`,
+        `XXPUSSYX`,
         baseURI,
       ];
       const artistArtifact = await deployments.getArtifact(`ArtistV${artistVersion}`);
