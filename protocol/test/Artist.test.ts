@@ -331,7 +331,7 @@ async function testArtistContract(deployContract: Function, name: string) {
       await expect(tx).to.be.revertedWith(`No permissioned tokens available & open auction not started`);
     });
 
-    it(`reverts if permissioned is sold out and open auction hasn't started`, async () => {
+    it(`reverts if permissioned quantity is sold out and open auction hasn't started`, async () => {
       await setUpContract({
         quantity: BigNumber.from(2),
         permissionedQuantity: BigNumber.from(1),
@@ -378,7 +378,7 @@ async function testArtistContract(deployContract: Function, name: string) {
       const [_, buyer] = await ethers.getSigners();
 
       // Test some purchases in order
-      for (let ticketNumber = 1; ticketNumber <= 500; ticketNumber++) {
+      for (let ticketNumber = 1; ticketNumber <= quantity * 2; ticketNumber++) {
         // Skip ticket number if it is a multiple of 256,
         // because that is the magic index we use to initialize the next 256 bit array of tickets for the edition
         if (ticketNumber % 256 === 0) {
@@ -517,8 +517,7 @@ async function testArtistContract(deployContract: Function, name: string) {
       await expect(tx).to.be.revertedWith('Invalid signer');
     });
 
-    it(`reverts if signature is for the wrong edition during presale`, async () => {
-      const quantity = 1;
+    it(`reverts if signature is for the wrong edition during permissioned sale`, async () => {
       await setUpContract({
         permissionedQuantity: BigNumber.from(quantity),
         quantity: BigNumber.from(quantity),
@@ -1182,38 +1181,6 @@ async function testArtistContract(deployContract: Function, name: string) {
 
       const ownersResponse = artist.ownersOfTokenIds(tokenIds);
       await expect(ownersResponse).to.be.revertedWith('ERC721: owner query for nonexistent token');
-    });
-  });
-
-  describe('end-to-end', () => {
-    it(`successful buy and withdraw`, async () => {
-      const quantity = 10;
-      await setUpContract({ quantity: BigNumber.from(quantity) });
-
-      const artistWalletInitBalance = await provider.getBalance(fundingRecipient.address);
-      const artistContractInitBalance = await provider.getBalance(artist.address);
-
-      for (let count = 1; count <= quantity; count++) {
-        const revenue = price.mul(count);
-        const currentBuyer = miscAccounts[count];
-        const ticketNumber = count;
-        await artist.connect(currentBuyer).buyEdition(EDITION_ID, EMPTY_SIGNATURE, ticketNumber, {
-          value: price,
-        });
-        const contractBalance = await provider.getBalance(artist.address);
-        await expect(contractBalance.toString()).to.eq(revenue.add(artistContractInitBalance).toString());
-      }
-
-      // using soundOwner to withdraw so we don't have to encorporate gas fee when making assertions
-      await artist.connect(soundOwner).withdrawFunds(EDITION_ID);
-
-      const postWithdrawBalance = await provider.getBalance(artist.address);
-      const recipientBalance = await provider.getBalance(fundingRecipient.address);
-      const totalRevenue = price.mul(quantity);
-
-      // All the funds are withdrawn
-      await expect(postWithdrawBalance.toString()).to.eq('0');
-      await expect(recipientBalance.toString()).to.eq(artistWalletInitBalance.add(totalRevenue));
     });
   });
 }
