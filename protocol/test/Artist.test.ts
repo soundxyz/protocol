@@ -546,6 +546,37 @@ async function testArtistContract(deployContract: Function, name: string) {
       await expect(tx).to.be.revertedWith('Invalid signer');
     });
 
+    it(`reverts if buyer attempts to reuse ticket`, async () => {
+      const quantity = 10;
+      await setUpContract({
+        permissionedQuantity: BigNumber.from(quantity),
+        quantity: BigNumber.from(quantity),
+        startTime: BigNumber.from(currentSeconds() + 99999999),
+      });
+
+      const chainId = (await provider.getNetwork()).chainId;
+
+      for (let ticketNumber = 1; ticketNumber < quantity; ticketNumber++) {
+        const buyer = miscAccounts[ticketNumber];
+
+        const signature = await getPresaleSignature({
+          chainId,
+          provider,
+          editionId: EDITION_ID,
+          ticketNumber: ticketNumber.toString(),
+          privateKey: process.env.ADMIN_PRIVATE_KEY,
+          contractAddress: artist.address,
+          buyerAddress: buyer.address,
+        });
+
+        await artist.connect(buyer).buyEdition(EDITION_ID, signature, ticketNumber, { value: price });
+        const tx2 = artist.connect(buyer).buyEdition(EDITION_ID, signature, ticketNumber, {
+          value: price,
+        });
+        await expect(tx2).to.be.revertedWith('Invalid ticket number or NFT already claimed');
+      }
+    });
+
     // This test is to ensure that even if the permissioned doesn't sell out, people can buy during the open sale without needing a signature
     it(`doesn't require signature if public sale has started, permissioned hasn't sold out, and its not a fully whitelisted sale (permissionedQuantity < quantity)`, async () => {
       await setUpContract({

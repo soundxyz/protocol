@@ -439,7 +439,7 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
         require(storedBit == 0, 'Invalid ticket number or NFT already claimed');
 
         // Flip the bit to 1 to indicate that the ticket has been claimed
-        ticketNumbers[_editionId][ticketNumbersIdx] = localGroup & ~(uint256(1) << localGroupOffset);
+        ticketNumbers[_editionId][ticketNumbersIdx] = localGroup | (uint256(1) << localGroupOffset);
 
         bytes32 digest = keccak256(
             abi.encodePacked(
