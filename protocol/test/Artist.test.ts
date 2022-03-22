@@ -99,7 +99,7 @@ async function testArtistContract(deployContract: Function, name: string) {
             royaltyBPS,
             startTime,
             endTime,
-            permissionedQuantity,
+            permissionedQuantity.toString(),
             signerAddress
           );
 
@@ -340,8 +340,6 @@ async function testArtistContract(deployContract: Function, name: string) {
       });
 
       const buyer = miscAccounts[0];
-      const chainId = (await provider.getNetwork()).chainId;
-
       const ticketNumber = '1';
       const signature = await getPresaleSignature({
         chainId,
@@ -437,16 +435,15 @@ async function testArtistContract(deployContract: Function, name: string) {
     });
 
     it(`reverts if ticket number exceeds maximum`, async () => {
-      const quantity = 25;
-      const permissionedQuantity = 1_000_000;
+      // permissioned quantity max == uint32.max - 1
+      const permissionedQuantity = BigNumber.from(BigNumber.from(2).pow(32)).sub(1);
       await setUpContract({
-        quantity: BigNumber.from(quantity),
-        permissionedQuantity: BigNumber.from(permissionedQuantity),
+        permissionedQuantity,
         startTime: BigNumber.from(currentSeconds() + 99999999),
       });
       const [_, buyer] = await ethers.getSigners();
 
-      const ticketNum1 = BigNumber.from(2).pow(128);
+      const ticketNum1 = permissionedQuantity.add(1); // add one to put it out of range
       const presaleSig1 = await getPresaleSignature({
         chainId,
         provider,
@@ -495,10 +492,7 @@ async function testArtistContract(deployContract: Function, name: string) {
         startTime: BigNumber.from(currentSeconds() + 99999999),
       });
 
-      const chainId = (await provider.getNetwork()).chainId;
-
       const buyer = miscAccounts[10];
-
       const ticketNumber = '1';
       const signature = await getPresaleSignature({
         chainId,
@@ -524,9 +518,7 @@ async function testArtistContract(deployContract: Function, name: string) {
         startTime: BigNumber.from(currentSeconds() + 99999999),
       });
 
-      const chainId = (await provider.getNetwork()).chainId;
       const buyer = miscAccounts[0];
-
       const wrongEditionId = '666';
       const ticketNumber = '1';
       const signature = await getPresaleSignature({
@@ -553,8 +545,6 @@ async function testArtistContract(deployContract: Function, name: string) {
         quantity: BigNumber.from(quantity),
         startTime: BigNumber.from(currentSeconds() + 99999999),
       });
-
-      const chainId = (await provider.getNetwork()).chainId;
 
       for (let ticketNumber = 1; ticketNumber < quantity; ticketNumber++) {
         const buyer = miscAccounts[ticketNumber];
@@ -704,7 +694,6 @@ async function testArtistContract(deployContract: Function, name: string) {
     it(`allows purchase if no permissioned exists and quantity remains`, async () => {
       await setUpContract({ quantity: BigNumber.from(1), permissionedQuantity: BigNumber.from(0) });
       const buyer = miscAccounts[0];
-      const chainId = (await provider.getNetwork()).chainId;
 
       const signature = await getPresaleSignature({
         chainId,
@@ -752,7 +741,6 @@ async function testArtistContract(deployContract: Function, name: string) {
     it(`signature is ignored during the open/public sale`, async () => {
       await setUpContract({ quantity: BigNumber.from(2), permissionedQuantity: BigNumber.from(1) });
       const buyer = miscAccounts[0];
-      const chainId = (await provider.getNetwork()).chainId;
 
       const ticketNumber = '1';
       const signature = await getPresaleSignature({
@@ -777,7 +765,6 @@ async function testArtistContract(deployContract: Function, name: string) {
     it(`allows purchase if permissioned is sold out but quantity remains`, async () => {
       await setUpContract({ quantity: BigNumber.from(2), permissionedQuantity: BigNumber.from(1) });
       const buyer = miscAccounts[0];
-      const chainId = (await provider.getNetwork()).chainId;
 
       const ticketNumber = '1';
       const signature = await getPresaleSignature({
@@ -1127,8 +1114,6 @@ async function testArtistContract(deployContract: Function, name: string) {
 
   describe('royaltyInfo', () => {
     it('returns royalty info', async () => {
-      const chainId = (await provider.getNetwork()).chainId;
-
       for (let i = 1; i < 5; i++) {
         const editionId = i;
         const currentBuyer = miscAccounts[i];

@@ -419,7 +419,8 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
         uint256 _ticketNumber
     ) private returns (address) {
         // Check that the ticket number is within the reserved range for the edition
-        require(_ticketNumber < 2**128, 'Ticket number exceeds max');
+        // permissionedQuantity is uint32, so ticketNumber can't exceed max uint32
+        require(_ticketNumber < 2**32, 'Ticket number exceeds max');
 
         uint256 localGroup; // the bit array for this ticket number
         uint256 ticketNumbersIdx; // the index of the the local group
