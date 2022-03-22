@@ -2,12 +2,13 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/dist/src/signers';
 import { constants, helpers } from '@soundxyz/common';
 import { expect } from 'chai';
 import { BigNumber, Contract, utils } from 'ethers';
-import { parseUnits } from 'ethers/lib/utils';
+import { parseEther, parseUnits } from 'ethers/lib/utils';
 import { ethers, upgrades, waffle } from 'hardhat';
 
 import {
   BASE_URI,
   createArtist,
+  currentSeconds,
   EMPTY_SIGNATURE,
   EXAMPLE_ARTIST_NAME,
   EXAMPLE_ARTIST_SYMBOL,
@@ -16,8 +17,6 @@ import {
   MAX_UINT32,
   NULL_ADDRESS,
 } from './helpers';
-
-const { baseURIs } = constants;
 
 enum TimeType {
   START = 0,
@@ -32,13 +31,12 @@ type CustomMintArgs = {
   editionCount?: number;
   royaltyBPS?: BigNumber;
   fundingRecipient?: SignerWithAddress;
-  version?: number;
 };
 
 const { provider } = waffle;
-
 const { getPresaleSignature } = helpers;
-
+const { baseURIs } = constants;
+const chainId = 1337;
 const EDITION_ID = '1';
 
 describe('Upgrades', () => {
@@ -47,7 +45,7 @@ describe('Upgrades', () => {
   let artistWalletSigner: SignerWithAddress;
   let recipientSigner: SignerWithAddress;
   let fundingRecipient: SignerWithAddress;
-  let attackerSigners: SignerWithAddress[];
+  let miscSigners: SignerWithAddress[];
   let artistPreUpgradeProxy: Contract;
   let artistPostUpgradeProxy: Contract;
   let price: BigNumber;
@@ -57,7 +55,7 @@ describe('Upgrades', () => {
   let endTime: BigNumber;
 
   const setUp = async (customConfig: CustomMintArgs = {}) => {
-    [soundOwnerSigner, artistWalletSigner, recipientSigner, ...attackerSigners] = await ethers.getSigners();
+    [soundOwnerSigner, artistWalletSigner, recipientSigner, ...miscSigners] = await ethers.getSigners();
 
     const ArtistCreator = await ethers.getContractFactory('ArtistCreator');
     artistCreator = await upgrades.deployProxy(ArtistCreator, { kind: 'uups' });
@@ -73,11 +71,11 @@ describe('Upgrades', () => {
 
     const receipt = await tx.wait();
     const artistPreUpgradeProxyAddress = receipt.events[3].args.artistAddress;
-    artistPreUpgradeProxy = await ethers.getContractAt('Artist', artistPreUpgradeProxyAddress, artistWalletSigner);
+    artistPreUpgradeProxy = await ethers.getContractAt(`Artist`, artistPreUpgradeProxyAddress, artistWalletSigner);
 
     const editionCount = customConfig.editionCount ?? 1;
     fundingRecipient = customConfig.fundingRecipient || recipientSigner;
-    price = customConfig.price || getRandomBN(MAX_UINT32);
+    price = customConfig.price || parseEther('0.1');
     quantity = customConfig.quantity || getRandomBN();
     royaltyBPS = customConfig.royaltyBPS || BigNumber.from(0);
     startTime = customConfig.startTime || BigNumber.from(0x0); // default to start of unix epoch
@@ -261,7 +259,6 @@ describe('Upgrades', () => {
         );
         await editionTx.wait();
 
-        const chainId = (await provider.getNetwork()).chainId;
         const signers = await ethers.getSigners();
         const buyer = signers[10];
 
@@ -361,6 +358,36 @@ describe('Upgrades', () => {
           }
         }
       });
+
+      it('can withdraw ETH after upgrade', async () => {
+        await setUp();
+        const initialBalance = await provider.getBalance(fundingRecipient.address);
+
+        await artistPreUpgradeProxy.buyEdition(EDITION_ID, { value: price });
+
+        await upgradeArtistImplementation('ArtistV3');
+
+        await artistPreUpgradeProxy.withdrawFunds(EDITION_ID);
+
+        const postUpgradeBalance = await provider.getBalance(fundingRecipient.address);
+
+        expect(initialBalance.add(price).toString()).to.equal(postUpgradeBalance.toString());
+      });
+
+      it('sends ETH to funding recipient from buy edition transactions after upgrade', async () => {
+        await setUp();
+        const initialBalance = await provider.getBalance(fundingRecipient.address);
+
+        await upgradeArtistImplementation('ArtistV3');
+
+        const price = parseUnits('42');
+
+        await artistPreUpgradeProxy.buyEdition(EDITION_ID, EMPTY_SIGNATURE, { value: price });
+
+        const postBuyBalance = await provider.getBalance(fundingRecipient.address);
+
+        expect(initialBalance.add(price).toString()).to.equal(postBuyBalance.toString());
+      });
     });
 
     describe('Artist proxy deployed after upgrade', () => {
@@ -402,38 +429,92 @@ describe('Upgrades', () => {
     });
   });
 
-  // ArtistV2 -> ArtistV3 TESTS
-
-  describe('ArtistV2.sol -> ArtistV3.sol', () => {
+  describe('ArtistV3.sol -> ArtistV4.sol', () => {
     describe('Artist proxy deployed before upgrade', () => {
-      it('can withdraw ETH after upgrade', async () => {
+      it('can sell an edition before and after upgrade', async () => {
         await setUp();
-        const initialBalance = await provider.getBalance(fundingRecipient.address);
+
+        const signers = await ethers.getSigners();
+        const buyer = signers[10];
 
         await artistPreUpgradeProxy.buyEdition(EDITION_ID, { value: price });
 
-        await upgradeArtistImplementation('ArtistV3');
+        await upgradeArtistImplementation('ArtistV4');
 
-        await artistPreUpgradeProxy.withdrawFunds(EDITION_ID);
+        const startTime = BigNumber.from(currentSeconds() + 999999);
+        const presaleQuantity = quantity;
+        const signerAddress = soundOwnerSigner.address;
+        const editionTx = await artistPostUpgradeProxy.createEdition(
+          fundingRecipient.address,
+          price,
+          quantity,
+          royaltyBPS,
+          startTime,
+          endTime,
+          presaleQuantity,
+          signerAddress
+        );
+        await editionTx.wait();
 
-        const postUpgradeBalance = await provider.getBalance(fundingRecipient.address);
+        const ticketNumber = '1';
+        const signature = await getPresaleSignature({
+          chainId,
+          provider,
+          editionId: EDITION_ID,
+          privateKey: process.env.ADMIN_PRIVATE_KEY,
+          contractAddress: artistPostUpgradeProxy.address,
+          buyerAddress: buyer.address,
+          ticketNumber,
+        });
 
-        expect(initialBalance.add(price).toString()).to.equal(postUpgradeBalance.toString());
+        const tx = await artistPreUpgradeProxy.buyEdition(EDITION_ID, signature, ticketNumber, { value: price });
+        const receipt = await tx.wait();
+        const editionInfo = await artistPreUpgradeProxy.editions(EDITION_ID);
+
+        expect(editionInfo.numSold).to.equal(2);
+        expect(receipt.status).to.equal(1);
       });
 
-      it('sends ETH to funding recipient from buy edition transactions after upgrade', async () => {
+      it('can create and sell an open edition after upgrade', async () => {
         await setUp();
-        const initialBalance = await provider.getBalance(fundingRecipient.address);
+        await upgradeArtistImplementation('ArtistV4');
 
-        await upgradeArtistImplementation('ArtistV3');
+        const startTime = BigNumber.from(currentSeconds() + 999999);
+        const quantity = 5;
+        const presaleQuantity = quantity * 2;
+        const signerAddress = soundOwnerSigner.address;
+        const editionTx = await artistPostUpgradeProxy.createEdition(
+          fundingRecipient.address,
+          price,
+          quantity,
+          royaltyBPS,
+          startTime,
+          endTime,
+          presaleQuantity,
+          signerAddress
+        );
+        await editionTx.wait();
 
-        const price = parseUnits('42');
+        for (let i = 1; i <= presaleQuantity; i++) {
+          const ticketNumber = i;
+          const currentBuyer = miscSigners[i];
+          const signature = await getPresaleSignature({
+            chainId,
+            provider,
+            editionId: EDITION_ID,
+            privateKey: process.env.ADMIN_PRIVATE_KEY,
+            contractAddress: artistPostUpgradeProxy.address,
+            buyerAddress: currentBuyer.address,
+            ticketNumber: ticketNumber.toString(),
+          });
 
-        await artistPreUpgradeProxy.buyEdition(EDITION_ID, EMPTY_SIGNATURE, { value: price });
+          const tx = await artistPreUpgradeProxy.buyEdition(EDITION_ID, signature, ticketNumber, { value: price });
+          const receipt = await tx.wait();
+          const editionInfo = await artistPreUpgradeProxy.editions(EDITION_ID);
 
-        const postBuyBalance = await provider.getBalance(fundingRecipient.address);
-
-        expect(initialBalance.add(price).toString()).to.equal(postBuyBalance.toString());
+          expect(editionInfo.numSold).to.equal(i);
+          expect(receipt.status).to.equal(1);
+        }
       });
     });
   });
@@ -447,7 +528,7 @@ describe('Upgrades', () => {
       const ArtistV2 = await ethers.getContractFactory('ArtistV2');
       const artistV2Impl = await ArtistV2.deploy();
       await artistV2Impl.deployed();
-      for (const attacker of attackerSigners) {
+      for (const attacker of miscSigners) {
         // upgrade beacon
         const beaconAddress = await artistCreator.beaconAddress();
         const beaconContract = await ethers.getContractAt('UpgradeableBeacon', beaconAddress, attacker);
@@ -479,7 +560,7 @@ describe('Upgrades', () => {
       const artistCreatorV2 = await ArtistCreator.deploy();
       await artistCreatorV2.deployed();
 
-      const artistCreatorV1 = await ethers.getContractAt('ArtistCreator', artistCreator.address, attackerSigners[0]);
+      const artistCreatorV1 = await ethers.getContractAt('ArtistCreator', artistCreator.address, miscSigners[0]);
       const tx = artistCreatorV1.upgradeTo(artistCreatorV2.address);
 
       expect(tx).to.be.revertedWith('Ownable: caller is not the owner');
