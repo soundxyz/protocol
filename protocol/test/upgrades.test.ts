@@ -564,7 +564,7 @@ describe('Upgrades', () => {
     });
   });
 
-  //================== TEST HELPERS ==================/
+  //================== REUSABLE TESTS ==================/
 
   const setStartTimeTest = async (artistContract: Contract) => {
     const newTime = 1743324758;
