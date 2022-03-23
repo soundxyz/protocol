@@ -4,8 +4,8 @@ import { BigNumber } from 'ethers';
 import Config from '../Config';
 import { currentSeconds } from '../helpers';
 
-export function createEditionTests(c: Config) {
-  const { setUpContract, EDITION_ID, MAX_UINT32, NULL_ADDRESS } = c;
+export function createEditionTests(config: Config) {
+  const { setUpContract, EDITION_ID, MAX_UINT32, NULL_ADDRESS } = config;
 
   it(`event logs return correct info`, async () => {
     const {

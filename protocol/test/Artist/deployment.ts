@@ -5,8 +5,8 @@ import { ethers } from 'hardhat';
 import Config from '../Config';
 import { getRandomInt } from '../helpers';
 
-export function deploymentTests(c: Config) {
-  const { setUpContract, EXAMPLE_ARTIST_NAME, EXAMPLE_ARTIST_SYMBOL } = c;
+export function deploymentTests(config: Config) {
+  const { setUpContract, EXAMPLE_ARTIST_NAME, EXAMPLE_ARTIST_SYMBOL } = config;
 
   it('deploys contract with basic attributes', async () => {
     const { artistContract } = await setUpContract();
