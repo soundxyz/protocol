@@ -22,6 +22,7 @@
     "postpublish": "gh-release",
     "seed:rinkeby": "DEPLOY_SEED_DATA=true pnpm deploy:rinkeby",
     "test": "hardhat test",
+    "coverage": "hardhat coverage",
     "test-watcher": "bob-tsm --cjs scripts/test-watcher.ts",
     "test-watcher:rinkeby": "NEXT_PUBLIC_VERCEL_ENV=preview pnpm test-watcher",
     "transfer-ownership": "hardhat transfer-ownership",
@@ -69,6 +70,7 @@
     "prettier": "^2.5.1",
     "prettier-plugin-solidity": "^1.0.0-alpha.59",
     "solhint-plugin-prettier": "^0.0.5",
+    "solidity-coverage": "^0.7.20",
     "ts-generator": "^0.1.1",
     "typescript": "^4.5.4"
   },

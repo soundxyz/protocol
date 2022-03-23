@@ -1134,7 +1134,28 @@ async function testArtistContract(deployContract: Function, name: string) {
     });
   });
 
+  describe('contractURI', () => {
+    it('returns expected URI', async () => {
+      await setUpContract();
+
+      const uri = await artist.contractURI();
+
+      expect(uri).to.equal(`${BASE_URI}${EXAMPLE_ARTIST_ID}/storefront`);
+    });
+  });
+
   describe('royaltyInfo', () => {
+    it('returns no royalty info for non-existent token', async () => {
+      const royalty = BigNumber.from(10_000);
+      await setUpContract({ royaltyBPS: BigNumber.from(royalty) });
+
+      const secondarySalePrice = ethers.utils.parseEther(getRandomBN().toString());
+      const expectedRoyaltyInfo = await artist.royaltyInfo('1', secondarySalePrice);
+
+      await expect(expectedRoyaltyInfo.royaltyAmount.toString()).to.eq('0');
+      await expect(expectedRoyaltyInfo.fundingRecipient).to.eq(NULL_ADDRESS);
+    });
+
     it('returns royalty info', async () => {
       for (let i = 1; i < 5; i++) {
         const editionId = i;

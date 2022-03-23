@@ -16,6 +16,7 @@ import '@typechain/hardhat';
 import 'hardhat-contract-sizer';
 import 'hardhat-deploy';
 import 'hardhat-gas-reporter';
+import 'solidity-coverage';
 
 import * as dotenv from 'dotenv';
 import { HardhatUserConfig } from 'hardhat/config';

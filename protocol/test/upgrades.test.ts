@@ -124,8 +124,6 @@ describe('Upgrades', () => {
 
   //================== Artist.sol ==================/
 
-  // ArtistV1 -> ArtistV2 TESTS
-
   describe('Artist.sol -> ArtistV2.sol', () => {
     describe('Artist proxy deployed before upgrade', () => {
       it('existing storage data remains intact', async () => {
@@ -311,13 +309,12 @@ describe('Upgrades', () => {
     });
   });
 
-  // ArtistV2 -> ArtistV3 TESTS
-
   describe('ArtistV2.sol -> ArtistV3.sol', () => {
     describe('Artist proxy deployed before upgrade', () => {
       it('returns expected tokenURI', async () => {
         const editionCount = 5;
         await setUp({ editionCount });
+        await tokenURITest(artistPreUpgradeProxy, editionCount);
         await upgradeArtistImplementation('ArtistV3');
         await tokenURITest(artistPreUpgradeProxy, editionCount);
       });
