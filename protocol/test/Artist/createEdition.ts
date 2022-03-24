@@ -1,8 +1,8 @@
 import { expect } from 'chai';
 import { BigNumber } from 'ethers';
 
+import { currentSeconds } from '../../helpers';
 import Config from '../Config';
-import { currentSeconds } from '../helpers';
 
 export function createEditionTests(config: Config) {
   const { setUpContract, EDITION_ID, MAX_UINT32, NULL_ADDRESS } = config;

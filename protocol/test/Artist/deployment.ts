@@ -2,8 +2,8 @@ import { expect } from 'chai';
 import { BigNumber } from 'ethers';
 import { ethers } from 'hardhat';
 
+import { getRandomInt } from '../../helpers';
 import Config from '../Config';
-import { getRandomInt } from '../helpers';
 
 export function deploymentTests(config: Config) {
   const { setUpContract, EXAMPLE_ARTIST_NAME, EXAMPLE_ARTIST_SYMBOL } = config;

@@ -3,7 +3,7 @@ import { BigNumber } from 'ethers';
 import { parseEther } from 'ethers/lib/utils';
 import { ethers, waffle } from 'hardhat';
 
-import { getRandomBN } from './helpers';
+import { getRandomBN } from '../helpers';
 
 type CustomMintArgs = {
   quantity?: BigNumber;
