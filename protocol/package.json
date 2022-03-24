@@ -30,6 +30,7 @@
     "verify": "hardhat verify-contract"
   },
   "dependencies": {
+    "@chainlink/contracts": "^0.4.0",
     "@ethersproject/units": "^5.6.0",
     "@nomiclabs/hardhat-ethers": "npm:hardhat-deploy-ethers@0.3.0-beta.11",
     "@nomiclabs/hardhat-etherscan": "^2.1.6",

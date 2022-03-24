@@ -83,6 +83,7 @@ importers:
 
   protocol:
     specifiers:
+      '@chainlink/contracts': ^0.4.0
       '@ethersproject/providers': ^5.5.3
       '@ethersproject/units': ^5.6.0
       '@nomiclabs/hardhat-ethers': npm:hardhat-deploy-ethers@0.3.0-beta.11
@@ -125,6 +126,7 @@ importers:
       typechain: ^5.1.2
       typescript: ^4.5.4
     dependencies:
+      '@chainlink/contracts': 0.4.0
       '@ethersproject/units': 5.6.0
       '@nomiclabs/hardhat-ethers': /hardhat-deploy-ethers/0.3.0-beta.11_ethers@5.5.4+hardhat@2.8.3
       '@nomiclabs/hardhat-etherscan': 2.1.8_hardhat@2.8.3
@@ -194,6 +196,10 @@ packages:
     dependencies:
       regenerator-runtime: 0.13.9
     dev: true
+
+  /@chainlink/contracts/0.4.0:
+    resolution: {integrity: sha512-yZGeCBd7d+qxfw9r/JxtPzsW2kCc6MorPRZ/tDKnaJI98H99j5P2Fosfehmcwk6wVZlz+0Bp4kS1y480nw3Zow==}
+    dev: false
 
   /@changesets/apply-release-plan/5.0.4:
     resolution: {integrity: sha512-czayDIrgC8qBnqwClvh9nxjCMem+XZG7xtfdYwq3dxpzA30qGppcI0i088VYug5RCFR+l1N+HUvkujSZuBK65w==}

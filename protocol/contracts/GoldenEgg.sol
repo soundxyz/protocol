@@ -1,7 +1,10 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity 0.8.7;
+// SPDX-License-Identifier: MIT
+// An example of a consumer contract that relies on a subscription for funding.
+pragma solidity ^0.8.7;
 
-import '@chainlink/contracts/src/v0.8/VRFConsumerBase.sol';
+import '@chainlink/contracts/src/v0.8/interfaces/LinkTokenInterface.sol';
+import '@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol';
+import '@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol';
 
 /*
                ^###############################################&5               
@@ -26,6 +29,70 @@ import '@chainlink/contracts/src/v0.8/VRFConsumerBase.sol';
 
 /// @title Sound Golden Egg
 /// @author sound.xyz
-contract GoldenEgg is VRFConsumerBase {
+contract GoldenEgg is VRFConsumerBaseV2 {
+    VRFCoordinatorV2Interface public vrfCoordinator;
+    LinkTokenInterface public linkToken;
 
+    // Your subscription ID.
+    uint64 subscriptionId;
+
+    // Rinkeby coordinator. For other networks,
+    // see https://docs.chain.link/docs/vrf-contracts/#configurations
+    // address vrfCoordinator = 0x6168499c0cFfCaCD319c818142124B7A15E857ab;
+
+    // Rinkeby LINK token contract. For other networks,
+    // see https://docs.chain.link/docs/vrf-contracts/#configurations
+    // address linkToken = 0x01BE23585060835E02B77ef475b0Cc51aA1e0709;
+
+    // The gas lane to use, which specifies the maximum gas price to bump to.
+    // For a list of available gas lanes on each network,
+    // see https://docs.chain.link/docs/vrf-contracts/#configurations
+    bytes32 gasLaneKeyHash; // = 0xd89b2bf150e3b9e13446986e571fb9cab24b13cea0a43ea20a6049a85cc807cc;
+
+    // Depends on the number of requested values that you want sent to the
+    // fulfillRandomWords() function. Storing each word costs about 20,000 gas,
+    // so 100,000 is a safe default for this example contract. Test and adjust
+    // this limit based on the network that you select, the size of the request,
+    // and the processing of the callback request in the fulfillRandomWords()
+    // function.
+    uint32 callbackGasLimit = 100000;
+
+    // request ID => random number
+    mapping(uint256 => uint256) public randomNumbers;
+    uint256 public requestId;
+    address public admin;
+
+    constructor(
+        uint64 _subscriptionId,
+        address _admin,
+        address _vrfCoordinator,
+        address _linkToken,
+        bytes32 _gasLaneKeyHash
+    ) VRFConsumerBaseV2(_vrfCoordinator) {
+        vrfCoordinator = VRFCoordinatorV2Interface(_vrfCoordinator);
+        linkToken = LinkTokenInterface(_linkToken);
+        admin = _admin;
+        subscriptionId = _subscriptionId;
+        gasLaneKeyHash = _gasLaneKeyHash;
+    }
+
+    function requestRandomNumber() external {
+        require(msg.sender == admin, 'Only admin can request a number');
+
+        // Will revert if subscription is not set and funded.
+        requestId = vrfCoordinator.requestRandomWords(
+            gasLaneKeyHash,
+            subscriptionId,
+            3, // request confirmations (default is 3)
+            callbackGasLimit,
+            1 // number of words being requested
+        );
+    }
+
+    // "Words" refers to 32-byte random numbers (ie: uint256)
+    function fulfillRandomWords(uint256 _requestId, uint256[] memory _randomWords) internal override {
+        randomNumbers[_requestId] = _randomWords[0];
+    }
+
+    // TODO: add a setAdminAddress function
 }
