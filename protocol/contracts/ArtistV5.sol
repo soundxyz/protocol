@@ -31,7 +31,7 @@ import {ArtistCreator} from './ArtistCreator.sol';
 import {ECDSA} from '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
 
 // TODO: make an interface for this and import that instead
-import {GoldenEggInterface} from './GoldenEggInterface.sol';
+// import {GoldenEggInterface} from './GoldenEggInterface.sol';
 
 /// @title Artist
 /// @author SoundXYZ - @gigamesh & @vigneshka
@@ -53,6 +53,11 @@ contract ArtistV5 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
 
     // ============ Structs ============
 
+    struct Attribute {
+        string trait_type;
+        string value;
+    }
+
     struct Edition {
         // The account that will receive sales revenue.
         address payable fundingRecipient;
@@ -72,8 +77,20 @@ contract ArtistV5 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
         uint32 permissionedQuantity;
         // whitelist signer address
         address signerAddress;
-        // request ID for random number from chainlink
-        uint256 goldenEggId;
+        // request ID for golden egg random number from chainlink
+        // uint256 goldenEggId;
+    }
+
+    struct Metadata {
+        string name;
+        string description;
+        string externalURL;
+        string imageURI;
+        string audioURI;
+        string animationURI;
+        string commentWallURI;
+        string attributes;
+        string baseURI;
     }
 
     // ================================
@@ -100,8 +117,10 @@ contract ArtistV5 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
     bytes32 private immutable DOMAIN_SEPARATOR;
     // Used to track which tokens have been claimed. editionId -> index -> bit array
     mapping(uint256 => mapping(uint256 => uint256)) ticketNumbers;
+    // Mapping of edition id to metadata
+    mapping(uint256 => Metadata) public metadata;
     // Golden egg contract
-    GoldenEggInterface public goldenEgg;
+    // GoldenEggInterface public goldenEgg;
 
     // ================================
     // EVENTS
@@ -141,7 +160,7 @@ contract ArtistV5 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
     /// @notice Contract constructor
     constructor() {
         DOMAIN_SEPARATOR = keccak256(abi.encode(keccak256('EIP712Domain(uint256 chainId)'), block.chainid));
-        goldenEgg = GoldenEggInterface(0x8E6C5feDB9205dD9131CDA8f5774A2Db204DBd7D);
+        // goldenEgg = GoldenEggInterface(0x8E6C5feDB9205dD9131CDA8f5774A2Db204DBd7D);
     }
 
     /// @notice Initializes the contract
@@ -184,7 +203,8 @@ contract ArtistV5 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
         uint32 _startTime,
         uint32 _endTime,
         uint32 _permissionedQuantity,
-        address _signerAddress
+        address _signerAddress,
+        string[9] calldata _metadata
     ) external onlyOwner {
         require(_quantity > 0, 'Must set quantity');
         require(_fundingRecipient != address(0), 'Must set fundingRecipient');
@@ -203,8 +223,20 @@ contract ArtistV5 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
             startTime: _startTime,
             endTime: _endTime,
             permissionedQuantity: _permissionedQuantity,
-            signerAddress: _signerAddress,
-            goldenEggId: 0
+            signerAddress: _signerAddress
+        });
+
+        metadata[atEditionId.current()] = Metadata({
+            name: _metadata[0],
+            description: _metadata[1],
+            externalURL: _metadata[2],
+            imageURI: _metadata[3],
+            audioURI: _metadata[4],
+            animationURI: _metadata[5],
+            commentWallURI: _metadata[6],
+            attributes: _metadata[7],
+            baseURI: _metadata[8]
+            // goldenEggId: 0,
         });
 
         emit EditionCreated(
@@ -299,11 +331,11 @@ contract ArtistV5 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
         _sendFunds(editions[_editionId].fundingRecipient, remainingForEdition);
     }
 
-    function setGoldenEgg(uint256 _editionId) external onlyOwner {
-        // Request random number for golden egg
-        uint256 requestId = goldenEgg.requestRandomNumber();
-        editions[_editionId].goldenEggId = requestId;
-    }
+    // function setGoldenEgg(uint256 _editionId) external onlyOwner {
+    //     // Request random number for golden egg
+    //     uint256 requestId = goldenEgg.requestRandomNumber();
+    //     editions[_editionId].goldenEggId = requestId;
+    // }
 
     /// @notice Sets the start time for an edition
     function setStartTime(uint256 _editionId, uint32 _startTime) external onlyOwner {

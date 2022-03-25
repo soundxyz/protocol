@@ -12,7 +12,6 @@ import {
   getApprovedTests,
   ownersOfTokenIdsTests,
   royaltyInfoTests,
-  setGoldenEggTests,
   setPermissionedQuantityTests,
   setSignerAddressTests,
   totalSupplyTests,
@@ -92,9 +91,9 @@ function testArtistContract(config: Config) {
     ownersOfTokenIdsTests(config);
   });
 
-  describe('setGoldenEgg', () => {
-    setGoldenEggTests(config);
-  });
+  // describe('setGoldenEgg', () => {
+  //   setGoldenEggTests(config);
+  // });
 
   describe('end-to-end tests', () => {
     endToEndTests(config);

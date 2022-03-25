@@ -4,7 +4,7 @@ import { BigNumber } from 'ethers';
 import { parseEther } from 'ethers/lib/utils';
 import { ethers, waffle } from 'hardhat';
 
-import { getRandomBN } from './helpers';
+import { BASE_URI, getRandomBN } from './helpers';
 
 type CustomMintArgs = {
   quantity?: BigNumber;
@@ -62,6 +62,31 @@ class Config {
     const fundingRecipient = customConfig.fundingRecipient || artistAccount;
     const permissionedQuantity = customConfig.permissionedQuantity || 0;
     const signerAddress = customConfig.signer === null ? this.NULL_ADDRESS : soundOwner.address;
+    const baseURL = BASE_URI;
+    const name = 'ample time';
+    const description = `Time is the greatest currency.`;
+    const externalURL = 'https://www.sound.xyz/oshi/ample-time';
+    const imageURI = 'QmXzvK4ByYa6yytBULcQzTueRoAV2efPETKUMFCMF5iXDp';
+    const audioURI = 'QmTLiCvEvs5DS8qQb7mHCwqyfuiKFfdW8P2R9h7vTc1D8m';
+    const animationURI = 'QmTLiCvEvs5DS8qQb7mHCwqyfuiKFfdW8P2R9h7vTc1D8m';
+    const commentWallURI = 'QmcfyRynEGx2E5w1pTYFNX6CQjZWAYxqbuzki9XUkt2zqG';
+    const attributes = JSON.stringify([
+      {
+        trait_type: 'ample time',
+        value: 'Golden Egg',
+      },
+    ]);
+    const metadata = [
+      name,
+      description,
+      externalURL,
+      imageURI,
+      audioURI,
+      animationURI,
+      commentWallURI,
+      attributes,
+      baseURL,
+    ];
 
     let eventData;
 
@@ -77,7 +102,8 @@ class Config {
             startTime,
             endTime,
             permissionedQuantity,
-            signerAddress
+            signerAddress,
+            metadata
           );
 
         const editionReceipt = await createEditionTx.wait();
