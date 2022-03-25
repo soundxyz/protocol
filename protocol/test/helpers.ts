@@ -55,7 +55,7 @@ export const getRandomBN = (max?: number) => {
 };
 
 export const deployArtistImplementation = async (deployer: SignerWithAddress) => {
-  const Artist = await ethers.getContractFactory('ArtistV4');
+  const Artist = await ethers.getContractFactory('ArtistV5');
 
   const protoArtist = await Artist.connect(deployer).deploy();
   await protoArtist.deployed();
@@ -78,16 +78,16 @@ export const deployArtistProxy = async (artistAccount: SignerWithAddress, soundO
   await artistCreator.initialize();
   await artistCreator.deployed();
 
-  // Deploy ArtistV4 implementation
-  const ArtistV4 = await ethers.getContractFactory('ArtistV4');
+  // Deploy ArtistV5 implementation
+  const ArtistV5 = await ethers.getContractFactory('ArtistV5');
   const chainId = (await provider.getNetwork()).chainId;
-  const artistV4Impl = await ArtistV4.deploy();
-  await artistV4Impl.deployed();
+  const artistV5Impl = await ArtistV5.deploy();
+  await artistV5Impl.deployed();
 
-  // Upgrade beacon to point to ArtistV4 implementation
+  // Upgrade beacon to point to ArtistV5 implementation
   const beaconAddress = await artistCreator.beaconAddress();
   const beaconContract = await ethers.getContractAt('UpgradeableBeacon', beaconAddress, soundOwner);
-  const beaconTx = await beaconContract.upgradeTo(artistV4Impl.address);
+  const beaconTx = await beaconContract.upgradeTo(artistV5Impl.address);
   await beaconTx.wait();
 
   // Get sound.xyz signature to approve artist creation
@@ -104,7 +104,7 @@ export const deployArtistProxy = async (artistAccount: SignerWithAddress, soundO
   const receipt = await tx.wait();
   const contractAddress = receipt.events[3].args.artistAddress;
 
-  return ethers.getContractAt('ArtistV4', contractAddress);
+  return ethers.getContractAt('ArtistV5', contractAddress);
 };
 
 // shifts edition id to the left by 128 bits and adds the token id in the bottom bits

@@ -1,3 +1,4 @@
+// import { smock } from '@defi-wonderland/smock';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/dist/src/signers';
 import { BigNumber } from 'ethers';
 import { parseEther } from 'ethers/lib/utils';
@@ -45,8 +46,12 @@ class Config {
     const editionCount = customConfig.editionCount || 1;
 
     const signers = await ethers.getSigners();
-    const [soundOwner, artistAccount, ...miscAccounts] = signers;
+    const [soundOwner, artistAccount, goldenEggImpersonator, ...miscAccounts] = signers;
 
+    // const fakeGoldenEggContract = await smock.fake<Contract>(
+    //   await ethers.getContractFactory('GoldenEgg'),
+    //   { address: await goldenEggImpersonator.getAddress() } // This allows us to use an ethers override {from: Mock__L2CrossDomainMessenger.address} to mock calls
+    // );
     const artistContract = await this.deployContract(artistAccount, soundOwner);
 
     const price = customConfig.price || parseEther('0.1');

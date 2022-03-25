@@ -312,3 +312,21 @@ export async function ownersOfTokenIdsTests(config: Config) {
     await expect(ownersResponse).to.be.revertedWith('ERC721: owner query for nonexistent token');
   });
 }
+
+export async function setGoldenEggTests(config: Config) {
+  const { setUpContract, EDITION_ID } = config;
+
+  it('reverts if not called by owner', async () => {
+    // TODO
+  });
+
+  it('creates a requested token id', async () => {
+    const { artistAccount, artistContract } = await setUpContract({});
+
+    const tx = await artistContract.connect(artistAccount).setGoldenEgg(EDITION_ID);
+    const editionInfo = await artistContract.editions(EDITION_ID);
+    console.log(editionInfo);
+
+    await expect(editionInfo.goldenEggId).to.not.be.null;
+  });
+}

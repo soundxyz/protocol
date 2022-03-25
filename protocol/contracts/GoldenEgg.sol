@@ -5,6 +5,7 @@ pragma solidity ^0.8.7;
 import '@chainlink/contracts/src/v0.8/interfaces/LinkTokenInterface.sol';
 import '@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol';
 import '@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol';
+import {GoldenEggInterface} from './GoldenEggInterface.sol';
 
 /*
                ^###############################################&5               
@@ -29,12 +30,12 @@ import '@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol';
 
 /// @title Sound Golden Egg
 /// @author sound.xyz
-contract GoldenEgg is VRFConsumerBaseV2 {
+contract GoldenEgg is GoldenEggInterface, VRFConsumerBaseV2 {
     VRFCoordinatorV2Interface public vrfCoordinator;
     LinkTokenInterface public linkToken;
 
     // Your subscription ID.
-    uint64 subscriptionId;
+    uint64 public subscriptionId;
 
     // Rinkeby coordinator. For other networks,
     // see https://docs.chain.link/docs/vrf-contracts/#configurations
@@ -59,7 +60,6 @@ contract GoldenEgg is VRFConsumerBaseV2 {
 
     // request ID => random number
     mapping(uint256 => uint256) public randomNumbers;
-    uint256 public requestId;
     address public admin;
 
     constructor(
@@ -76,17 +76,19 @@ contract GoldenEgg is VRFConsumerBaseV2 {
         gasLaneKeyHash = _gasLaneKeyHash;
     }
 
-    function requestRandomNumber() external {
+    function requestRandomNumber() external override returns (uint256) {
         require(msg.sender == admin, 'Only admin can request a number');
 
         // Will revert if subscription is not set and funded.
-        requestId = vrfCoordinator.requestRandomWords(
+        uint256 requestId = vrfCoordinator.requestRandomWords(
             gasLaneKeyHash,
             subscriptionId,
             3, // request confirmations (default is 3)
             callbackGasLimit,
             1 // number of words being requested
         );
+
+        return requestId;
     }
 
     // "Words" refers to 32-byte random numbers (ie: uint256)
@@ -94,5 +96,10 @@ contract GoldenEgg is VRFConsumerBaseV2 {
         randomNumbers[_requestId] = _randomWords[0];
     }
 
-    // TODO: add a setAdminAddress function
+    // TODO: make setting admin a 2-step process to avoid mistakes (grant admin + accept admin request)
+    function setAdmin(address _admin) external override {
+        require(msg.sender == admin, 'Only admin can call this function');
+
+        admin = _admin;
+    }
 }

@@ -30,6 +30,9 @@ import {CountersUpgradeable} from '@openzeppelin/contracts-upgradeable/utils/Cou
 import {ArtistCreator} from './ArtistCreator.sol';
 import {ECDSA} from '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
 
+// TODO: make an interface for this and import that instead
+import {GoldenEggInterface} from './GoldenEggInterface.sol';
+
 /// @title Artist
 /// @author SoundXYZ - @gigamesh & @vigneshka
 /// @notice This contract is used to create & sell song NFTs for the artist who owns the contract.
@@ -69,6 +72,8 @@ contract ArtistV5 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
         uint32 permissionedQuantity;
         // whitelist signer address
         address signerAddress;
+        // request ID for random number from chainlink
+        uint256 goldenEggId;
     }
 
     // ================================
@@ -95,6 +100,8 @@ contract ArtistV5 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
     bytes32 private immutable DOMAIN_SEPARATOR;
     // Used to track which tokens have been claimed. editionId -> index -> bit array
     mapping(uint256 => mapping(uint256 => uint256)) ticketNumbers;
+    // Golden egg contract
+    GoldenEggInterface public goldenEgg;
 
     // ================================
     // EVENTS
@@ -134,6 +141,7 @@ contract ArtistV5 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
     /// @notice Contract constructor
     constructor() {
         DOMAIN_SEPARATOR = keccak256(abi.encode(keccak256('EIP712Domain(uint256 chainId)'), block.chainid));
+        goldenEgg = GoldenEggInterface(0x8E6C5feDB9205dD9131CDA8f5774A2Db204DBd7D);
     }
 
     /// @notice Initializes the contract
@@ -195,7 +203,8 @@ contract ArtistV5 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
             startTime: _startTime,
             endTime: _endTime,
             permissionedQuantity: _permissionedQuantity,
-            signerAddress: _signerAddress
+            signerAddress: _signerAddress,
+            goldenEggId: 0
         });
 
         emit EditionCreated(
@@ -236,6 +245,8 @@ contract ArtistV5 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
         require(quantity > 0, 'Edition does not exist');
         // Check that the sender is paying the correct amount.
         require(msg.value >= price, 'Must send enough to purchase the edition.');
+        // Don't allow purchases after the end time
+        require(endTime > block.timestamp, 'Auction has ended');
 
         // If the public auction hasn't started...
         if (startTime > block.timestamp) {
@@ -253,9 +264,6 @@ contract ArtistV5 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
             // so we can accomodate open editions
             require(numSold < quantity, 'This edition is already sold out.');
         }
-
-        // Don't allow purchases after the end time
-        require(endTime > block.timestamp, 'Auction has ended');
 
         // Create the token id by packing editionId in the top bits
         uint256 tokenId;
@@ -289,6 +297,12 @@ contract ArtistV5 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
 
         // Send the amount that was remaining for the edition, to the funding recipient.
         _sendFunds(editions[_editionId].fundingRecipient, remainingForEdition);
+    }
+
+    function setGoldenEgg(uint256 _editionId) external onlyOwner {
+        // Request random number for golden egg
+        uint256 requestId = goldenEgg.requestRandomNumber();
+        editions[_editionId].goldenEggId = requestId;
     }
 
     /// @notice Sets the start time for an edition
