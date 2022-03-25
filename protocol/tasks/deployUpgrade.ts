@@ -4,26 +4,20 @@ import { task } from 'hardhat/config';
 const MAX_GAS_PRICE = 150_000_000_000; // wei
 const { baseURIs } = constants;
 
-task('deploy-upgrade', 'Deploys an upgraded Artist.sol')
+task('deployUpgrade', 'Deploys an upgraded Artist.sol')
   .addParam('artistVersion', 'The version number of the new Artist.sol implementation')
   // .addParam('gasPrice', 'The gas price to use for the transaction')
   .setAction(async (args, hardhat) => {
-    const { ethers, network } = hardhat;
     const baseURI = baseURIs[hardhat.network.name];
-    const [deployer] = await ethers.getSigners();
-
-    if (!deployer.address) {
-      throw new Error('Missing deployer');
-    }
-
     const dummyArgsForArtistInit = [
-      deployer.address,
+      '0xB0A36b3CeDf210f37a5E7BC28d4b8E91D4E3C412', // rinkeby deployer address
       '0',
       `Sound.xyz ArtistV${args.artistVersion}.sol`,
       `SOUND V${args.artistVersion}`,
       baseURI,
     ];
 
+    const { ethers, network } = hardhat;
     const currentGasPrice = await ethers.provider.getGasPrice();
     const gasPriceInGwei = ethers.utils.formatUnits(currentGasPrice, 'gwei');
 

@@ -3,7 +3,7 @@ import { task } from 'hardhat/config';
 
 const { getAuthSignature } = helpers;
 
-task('deploy-proxy', 'Deploy Artist proxy & verify on etherscan')
+task('deployProxy', 'Deploy Artist proxy & verify on etherscan')
   .addParam('artistVersion', 'Artist.sol version number')
   .setAction(async (args, hardhat) => {
     const { ethers, run, deployments } = hardhat;
