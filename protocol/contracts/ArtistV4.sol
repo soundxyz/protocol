@@ -14,7 +14,6 @@ import {ERC721Upgradeable} from '@openzeppelin/contracts-upgradeable/token/ERC72
 import {OwnableUpgradeable} from '@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol';
 import {LibUintToString} from './LibUintToString.sol';
 import {CountersUpgradeable} from '@openzeppelin/contracts-upgradeable/utils/CountersUpgradeable.sol';
-import {ArtistCreator} from './ArtistCreator.sol';
 import {ECDSA} from '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
 
 /// @title Artist
