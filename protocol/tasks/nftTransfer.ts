@@ -1,6 +1,6 @@
 import { task } from 'hardhat/config';
 
-task('nft-transfer', 'Transfer ownership of an NFT')
+task('nftTransfer', 'Transfer ownership of an NFT')
   .addParam('contractAddress', 'The address of the NFT')
   .addParam('tokenId', 'The tokenId')
   .addParam('senderPk', 'The private key of the sender')
