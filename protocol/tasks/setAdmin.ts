@@ -3,7 +3,7 @@ import { task } from 'hardhat/config';
 
 const MAX_GAS_PRICE = 140_000_000_000; // wei
 
-task('set-admin')
+task('setAdmin')
   .addParam('admin', 'The address of the new admin')
   .setAction(async (args, hardhat) => {
     const { admin } = args;

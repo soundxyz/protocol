@@ -4,7 +4,7 @@ import { task } from 'hardhat/config';
 const MAX_GAS_PRICE = 150_000_000_000; // wei
 const { baseURIs } = constants;
 
-task('deploy-upgrade', 'Deploys an upgraded Artist.sol')
+task('deployUpgrade', 'Deploys an upgraded Artist.sol')
   .addParam('artistVersion', 'The version number of the new Artist.sol implementation')
   // .addParam('gasPrice', 'The gas price to use for the transaction')
   .setAction(async (args, hardhat) => {

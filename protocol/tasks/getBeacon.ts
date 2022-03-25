@@ -1,6 +1,6 @@
 import { task } from 'hardhat/config';
 
-task('get-beacon', async (_args, hardhat) => {
+task('getBeacon', async (_args, hardhat) => {
   const { ethers, deployments } = hardhat;
   const [soundDeployer] = await ethers.getSigners();
 

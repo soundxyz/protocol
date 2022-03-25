@@ -3,7 +3,7 @@ import { task } from 'hardhat/config';
 
 const { baseURIs } = constants;
 
-task('verify-contract', 'Verify a contract')
+task('verifyContract', 'Verify a contract')
   .addParam('name', 'The name of the contract')
   .addParam('address', 'The address of the contract to verify')
   .addOptionalParam('artistVersion', 'Artist.sol version number')
@@ -26,13 +26,13 @@ task('verify-contract', 'Verify a contract')
 
     let constructorArgs = [];
     if (name === 'BeaconProxy') {
-      const baseURI = baseURIs[hardhat.network.name];
+      // const baseURI = baseURIs[hardhat.network.name];
       const argsForArtistInit = [
-        '0xFC4504Dbf85F3D783b4cCD42De8697ce1df20eA2', // deployer address
+        '0xb0a36b3cedf210f37a5e7bc28d4b8e91d4e3c412', // deployer address
         '1',
-        `Gigaaaa`,
-        `GigAAAA`,
-        baseURI,
+        'Sound.xyz',
+        'IMPLEMENTATION',
+        'https://sound.xyz/api/metadata/',
       ];
       const artistArtifact = await deployments.getArtifact(`ArtistV${artistVersion}`);
       const iface = new ethers.utils.Interface(artistArtifact.abi);

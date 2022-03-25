@@ -105,7 +105,7 @@ export const getHash: (arg0: string[], arg1: number[], arg2: number) => string =
   return utils.solidityKeccak256(['address[]', 'uint32[]', 'uint32'], [accounts, percentAllocations, distributorFee]);
 };
 
-task('prep-split', async (_args, _hardhat) => {
+task('prepSplit', async (_args, _hardhat) => {
   const orderedAllocations = sortBy(allocations, (o) => o.ownerAddress.toLowerCase());
   const ownerAddresses = orderedAllocations.map((allocation) => allocation.ownerAddress.toLowerCase());
   const percentAllocations = orderedAllocations

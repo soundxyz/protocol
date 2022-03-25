@@ -1,6 +1,6 @@
 import { task } from 'hardhat/config';
 
-task('transfer-ownership', 'Transfer ownership of a contract')
+task('transferOwnership', 'Transfer ownership of a contract')
   .addParam('contractAddress', 'The address to transfer ownership of')
   .addParam('contractName', 'The name of the contract (must be in the /artifacts dir)')
   .addParam('newOwner', 'The address of the new owner')
