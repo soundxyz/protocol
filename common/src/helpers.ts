@@ -67,7 +67,7 @@ export async function getPresaleSignature({
   ];
 
   // only include requested token id if it is not undefined
-  if (ticketNumber) {
+  if (ticketNumber !== undefined) {
     EditionInfo.push(
       // Needed to prevent multiple purchases from the same address
       { name: 'ticketNumber', type: 'uint256' },

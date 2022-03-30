@@ -453,7 +453,7 @@ describe('Upgrades', () => {
         );
         await editionTx.wait();
 
-        const ticketNumber = '1';
+        const ticketNumber = '0';
         const signature = await getPresaleSignature({
           chainId,
           provider,
@@ -564,7 +564,7 @@ describe('Upgrades', () => {
     });
   });
 
-  //================== TEST HELPERS ==================/
+  //================== REUSABLE TESTS ==================/
 
   const setStartTimeTest = async (artistContract: Contract) => {
     const newTime = 1743324758;

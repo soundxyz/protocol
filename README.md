@@ -11,3 +11,11 @@ reshaping how we value music, [please apply here](https://jobs.ashbyhq.com/sound
 
 We welcome bug or vulnerability reports. If you have one, please message us so we can discuss it
 privately at dev@sound.xyz.
+
+---
+
+To install, you'll need [pnpm](https://pnpm.io/), then run: `pnpm i`
+
+To run tests: `pnpm test`
+
+To see test coverage: `npx hardhat coverage`
