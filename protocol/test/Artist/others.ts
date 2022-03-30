@@ -281,12 +281,13 @@ export async function ownersOfTokenIdsTests(config: Config) {
     const tokenIds = [];
     const expectedOwners = [];
     for (let editionId = 1; editionId <= editionCount; editionId++) {
-      for (let ticketNumber = 1; ticketNumber <= editionQuantity; ticketNumber++) {
+      for (let ticketNumber = 0; ticketNumber < editionQuantity; ticketNumber++) {
         const currentBuyer = miscAccounts[ticketNumber % miscAccounts.length]; // loops over buyers
         await artistContract.connect(currentBuyer).buyEdition(editionId, EMPTY_SIGNATURE, ticketNumber, {
           value: price,
         });
-        const expectedTokenId = getTokenId(editionId, ticketNumber);
+        const numSold = ticketNumber + 1;
+        const expectedTokenId = getTokenId(editionId, numSold);
         expectedOwners.push(currentBuyer.address);
         tokenIds.push(expectedTokenId);
       }

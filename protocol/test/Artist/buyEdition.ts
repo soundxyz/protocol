@@ -72,7 +72,7 @@ export function buyEditionTests(config: Config) {
     });
 
     const buyer = miscAccounts[0];
-    const ticketNumber = '1';
+    const ticketNumber = '0';
     const signature = await getPresaleSignature({
       chainId: CHAIN_ID,
       provider,
@@ -144,7 +144,7 @@ export function buyEditionTests(config: Config) {
       startTime: BigNumber.from(currentSeconds() + 99999999),
     });
 
-    const ticketNumber = '1';
+    const ticketNumber = '0';
     const tx = artistContract.buyEdition(EDITION_ID, EMPTY_SIGNATURE, ticketNumber, {
       value: price,
     });
@@ -160,7 +160,7 @@ export function buyEditionTests(config: Config) {
 
     const wrongArtistContract = await deployArtistProxy(miscAccounts[0], soundOwner);
     const buyer = miscAccounts[1];
-    const ticketNumber = '1';
+    const ticketNumber = '0';
     const signature = await getPresaleSignature({
       chainId: CHAIN_ID,
       provider,
@@ -185,7 +185,7 @@ export function buyEditionTests(config: Config) {
     });
 
     const buyer = miscAccounts[10];
-    const ticketNumber = '1';
+    const ticketNumber = '0';
     const signature = await getPresaleSignature({
       chainId: CHAIN_ID,
       provider,
@@ -211,7 +211,7 @@ export function buyEditionTests(config: Config) {
 
     const buyer = miscAccounts[0];
     const wrongEditionId = '666';
-    const ticketNumber = '1';
+    const ticketNumber = '0';
     const signature = await getPresaleSignature({
       chainId: CHAIN_ID,
       provider,
@@ -238,7 +238,7 @@ export function buyEditionTests(config: Config) {
       startTime: BigNumber.from(currentSeconds() + 99999999),
     });
 
-    for (let ticketNumber = 1; ticketNumber < quantity; ticketNumber++) {
+    for (let ticketNumber = 0; ticketNumber < quantity - 1; ticketNumber++) {
       const buyer = miscAccounts[ticketNumber];
 
       const signature = await getPresaleSignature({
@@ -271,7 +271,7 @@ export function buyEditionTests(config: Config) {
     const [_, buyer] = await ethers.getSigners();
 
     // Test some purchases in order
-    for (let ticketNumber = 1; ticketNumber <= quantity * 2; ticketNumber++) {
+    for (let ticketNumber = 0; ticketNumber <= quantity * 2; ticketNumber++) {
       const presaleSignature = await getPresaleSignature({
         chainId: CHAIN_ID,
         provider,
@@ -517,7 +517,7 @@ export function buyEditionTests(config: Config) {
     });
     const buyer = miscAccounts[0];
 
-    const ticketNumber = '1';
+    const ticketNumber = '0';
     const signature = await getPresaleSignature({
       chainId: CHAIN_ID,
       provider,
@@ -546,7 +546,7 @@ export function buyEditionTests(config: Config) {
     });
     const buyer = miscAccounts[0];
 
-    const ticketNumber = '1';
+    const ticketNumber = '0';
     const signature = await getPresaleSignature({
       chainId: CHAIN_ID,
       provider,

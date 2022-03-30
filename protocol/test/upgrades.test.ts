@@ -453,7 +453,7 @@ describe('Upgrades', () => {
         );
         await editionTx.wait();
 
-        const ticketNumber = '1';
+        const ticketNumber = '0';
         const signature = await getPresaleSignature({
           chainId,
           provider,
