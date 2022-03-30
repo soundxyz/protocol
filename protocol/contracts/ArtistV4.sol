@@ -386,6 +386,8 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
         return atEditionId.current() - 1; // because atEditionId is incremented after each edition is created
     }
 
+    /// @notice Returns the edition id for a given token id
+    /// @param _tokenId token id
     function tokenToEdition(uint256 _tokenId) public view returns (uint256) {
         // Check the top bits to see if the edition id is there
         uint256 editionId = _tokenId >> 128;
@@ -399,12 +401,29 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
         return editionId;
     }
 
+    /// @notice Returns a list of owner addresses for a given list of token ids
+    /// @param _tokenIds List of token ids
     function ownersOfTokenIds(uint256[] calldata _tokenIds) external view returns (address[] memory) {
         address[] memory owners = new address[](_tokenIds.length);
         for (uint256 i = 0; i < _tokenIds.length; i++) {
             owners[i] = ownerOf(_tokenIds[i]);
         }
         return owners;
+    }
+
+    function checkTicketNumbers(uint256 _editionId, uint256[] calldata _ticketNumbers)
+        external
+        view
+        returns (bool[] memory)
+    {
+        bool[] memory claimed = new bool[](_ticketNumbers.length);
+
+        for (uint256 i = 0; i < _ticketNumbers.length; i++) {
+            (uint256 storedBit, , , ) = _getBitForTicketNumber(_editionId, _ticketNumbers[i]);
+            claimed[i] = storedBit == 1;
+        }
+
+        return claimed;
     }
 
     // ================================
@@ -435,6 +454,42 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
         // permissionedQuantity is uint32, so ticketNumber can't exceed max uint32
         require(_ticketNumber < 2**32, 'Ticket number exceeds max');
 
+        // gets the stored bit
+        (
+            uint256 storedBit,
+            uint256 localGroup,
+            uint256 localGroupOffset,
+            uint256 ticketNumbersIdx
+        ) = _getBitForTicketNumber(_editionId, _ticketNumber);
+
+        require(storedBit == 0, 'Invalid ticket number or NFT already claimed');
+
+        // Flip the bit to 1 to indicate that the ticket has been claimed
+        ticketNumbers[_editionId][ticketNumbersIdx] = localGroup | (uint256(1) << localGroupOffset);
+
+        bytes32 digest = keccak256(
+            abi.encodePacked(
+                '\x19\x01',
+                DOMAIN_SEPARATOR,
+                keccak256(abi.encode(PERMISSIONED_SALE_TYPEHASH, address(this), msg.sender, _editionId, _ticketNumber))
+            )
+        );
+        return digest.recover(_signature);
+    }
+
+    /// @notice Gets the bit variables associated with a ticket number
+    /// @param _editionId edition id
+    /// @param _ticketNumber ticket number
+    function _getBitForTicketNumber(uint256 _editionId, uint256 _ticketNumber)
+        private
+        view
+        returns (
+            uint256,
+            uint256,
+            uint256,
+            uint256
+        )
+    {
         uint256 localGroup; // the bit array for this ticket number
         uint256 ticketNumbersIdx; // the index of the the local group
         uint256 localGroupOffset; // the offset/index for the ticket number in the local group
@@ -450,18 +505,6 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
         // gets the stored bit
         storedBit = (localGroup >> localGroupOffset) & uint256(1);
 
-        require(storedBit == 0, 'Invalid ticket number or NFT already claimed');
-
-        // Flip the bit to 1 to indicate that the ticket has been claimed
-        ticketNumbers[_editionId][ticketNumbersIdx] = localGroup | (uint256(1) << localGroupOffset);
-
-        bytes32 digest = keccak256(
-            abi.encodePacked(
-                '\x19\x01',
-                DOMAIN_SEPARATOR,
-                keccak256(abi.encode(PERMISSIONED_SALE_TYPEHASH, address(this), msg.sender, _editionId, _ticketNumber))
-            )
-        );
-        return digest.recover(_signature);
+        return (storedBit, localGroup, localGroupOffset, ticketNumbersIdx);
     }
 }

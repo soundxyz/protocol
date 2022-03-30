@@ -4,7 +4,7 @@ import { BigNumber } from 'ethers';
 import { ethers } from 'hardhat';
 
 import Config from '../Config';
-import { getRandomBN, getRandomInt, getTokenId } from '../helpers';
+import { currentSeconds, getRandomBN, getRandomInt, getTokenId, MAX_UINT32 } from '../helpers';
 
 const { getPresaleSignature } = commonHelpers;
 
@@ -311,5 +311,45 @@ export async function ownersOfTokenIdsTests(config: Config) {
 
     const ownersResponse = artistContract.ownersOfTokenIds(tokenIds);
     await expect(ownersResponse).to.be.revertedWith('ERC721: owner query for nonexistent token');
+  });
+}
+
+export function checkTicketNumbersTests(config: Config) {
+  const { setUpContract, EMPTY_SIGNATURE, EDITION_ID, CHAIN_ID, provider } = config;
+
+  it('returns correct list of booleans corresponding to a given list of claimed or unclaimed ticket numbers', async () => {
+    const editionQuantity = 10;
+    const { miscAccounts, artistContract, price } = await setUpContract({
+      quantity: BigNumber.from(10),
+      permissionedQuantity: BigNumber.from(MAX_UINT32),
+      startTime: BigNumber.from(currentSeconds() + 9999),
+    });
+
+    const ticketNumbers = [];
+    const expectedList = [];
+    for (let ticketNumber = 0; ticketNumber < editionQuantity; ticketNumber++) {
+      const currentBuyer = miscAccounts[ticketNumber % miscAccounts.length]; // loops over buyers
+      const signature = await getPresaleSignature({
+        chainId: CHAIN_ID,
+        provider,
+        editionId: EDITION_ID,
+        ticketNumber: ticketNumber.toString(),
+        privateKey: process.env.ADMIN_PRIVATE_KEY,
+        contractAddress: artistContract.address,
+        buyerAddress: currentBuyer.address,
+      });
+      await artistContract.connect(currentBuyer).buyEdition(EDITION_ID, signature, ticketNumber, {
+        value: price,
+      });
+      // Pushes a used ticket number onto the list
+      ticketNumbers.push(ticketNumber);
+      expectedList.push(true);
+      // Pushes an unused ticket number on to the list
+      ticketNumbers.push(ticketNumber + getRandomInt(editionQuantity, 10000));
+      expectedList.push(false);
+    }
+    const actualList = await artistContract.checkTicketNumbers(EDITION_ID, ticketNumbers);
+
+    await expect(expectedList).to.deep.eq(actualList);
   });
 }

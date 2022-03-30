@@ -7,6 +7,7 @@ import { createEditionTests } from './createEdition';
 import { deploymentTests } from './deployment';
 import { endToEndTests } from './endToEnd';
 import {
+  checkTicketNumbersTests,
   contractURITests,
   editionCountTests,
   getApprovedTests,
@@ -89,6 +90,10 @@ function testArtistContract(config: Config) {
 
   describe('ownersOfTokenIds', () => {
     ownersOfTokenIdsTests(config);
+  });
+
+  describe('checkTicketNumbers', () => {
+    checkTicketNumbersTests(config);
   });
 
   describe('end-to-end tests', () => {
