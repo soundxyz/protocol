@@ -4,7 +4,7 @@ import { DeployFunction } from 'hardhat-deploy/types';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { sortBy } from 'lodash';
 
-const { getAuthSignature } = helpers;
+const { getAuthSignature, getPresaleSignature } = helpers;
 
 const { artistsData, releaseData, usersData, creditSplits } = seedData;
 
@@ -181,7 +181,20 @@ const func: DeployFunction = async function ({ ethers, waffle, deployments }: Ha
 
     // Buy the edition
     const buyer = signers[(+index + 1) % signers.length];
-    const buyTx = await artistContract.connect(buyer).buyEdition(editionId, signerAddress, { value: price });
+    const ticketNumber = index;
+
+    // This signature isn't technically needed since we're not seeding presales, but that may change later
+    const signature = getPresaleSignature({
+      chainId,
+      provider: ethers.provider,
+      privateKey: process.env.ADMIN_PRIVATE_KEY as string,
+      ticketNumber: ticketNumber.toString(),
+      editionId: editionId.toString(),
+      buyerAddress: buyer.address,
+      contractAddress: contractAddress,
+    });
+
+    const buyTx = await artistContract.connect(buyer).buyEdition(editionId, signature, ticketNumber, { value: price });
 
     console.log(`Bought edition for ${name}. txHash: ${buyTx.hash}`);
 
