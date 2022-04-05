@@ -66,24 +66,28 @@ export async function getPresaleSignature({
     { name: 'editionId', type: 'uint256' },
   ];
 
+  const data: {
+    contractAddress: string;
+    buyerAddress: string;
+    editionId: string;
+    ticketNumber?: string;
+  } = {
+    contractAddress: contractAddress.toLowerCase(),
+    buyerAddress,
+    editionId,
+  };
+
   // only include requested token id if it is not undefined
   if (ticketNumber !== undefined) {
     EditionInfo.push(
       // Needed to prevent multiple purchases from the same address
       { name: 'ticketNumber', type: 'uint256' },
     );
+
+    data.ticketNumber = ticketNumber;
   }
 
-  const signature = await wallet._signTypedData(
-    domainSeparator,
-    { EditionInfo },
-    {
-      contractAddress: contractAddress.toLowerCase(),
-      buyerAddress,
-      editionId,
-      ticketNumber,
-    },
-  );
+  const signature = await wallet._signTypedData(domainSeparator, { EditionInfo }, data);
 
   return signature;
 }
