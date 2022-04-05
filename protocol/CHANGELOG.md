@@ -1,5 +1,17 @@
 # @soundxyz/protocol
 
+## 4.1.0
+
+### Minor Changes
+
+- 29ad0bd: Makes hardhat task names camelCase and adds new tasks
+- a67d2f2: Improves scripts
+
+### Patch Changes
+
+- Updated dependencies [bc53cb4]
+  - @soundxyz/common@2.6.0
+
 ## 4.0.1
 
 ### Patch Changes

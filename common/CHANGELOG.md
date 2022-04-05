@@ -1,5 +1,11 @@
 # @soundxyz/common
 
+## 2.6.0
+
+### Minor Changes
+
+- bc53cb4: Adds optional ticketNumber param to getPresaleSignature
+
 ## 2.5.1
 
 ### Patch Changes
