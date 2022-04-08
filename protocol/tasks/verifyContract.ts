@@ -15,8 +15,8 @@ task('verifyContract', 'Verify a contract')
     const { ethers, run, deployments } = hardhat;
     const { name, address, contract, artistVersion } = args;
 
-    if (name.toLowerCase().includes('artist') && !artistVersion) {
-      throw new Error(`Invalid Artist contract name: ${name}. Must have a version number`);
+    if (name.toLowerCase().includes('artist') && name !== 'ArtistCreator' && !artistVersion) {
+      throw Error(`Must provide a version number. ex: --name ArtistV3 --artist-version 3`);
     }
 
     console.log({ name, address, contract });

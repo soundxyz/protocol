@@ -19,7 +19,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
   console.log({ chainId, deployer: deployer.address }); // eslint-disable-line no-console// eslint-disable-line no-console
 
-  if (chainId != 1337 || chainId != 31337) {
+  if (chainId != 1337 && chainId != 31337) {
     console.log(`Skipping 0xSplits deployment since we're on ${NETWORK_MAP[chainId]}`);
     return;
   }
