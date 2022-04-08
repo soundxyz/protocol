@@ -17,7 +17,7 @@ task('deployUpgrade', 'Deploys an upgraded Artist.sol')
       baseURI,
     ];
 
-    const { ethers, network } = hardhat;
+    const { ethers, run, network } = hardhat;
     const currentGasPrice = await ethers.provider.getGasPrice();
     const gasPriceInGwei = ethers.utils.formatUnits(currentGasPrice, 'gwei');
 
@@ -42,12 +42,25 @@ task('deployUpgrade', 'Deploys an upgraded Artist.sol')
     const deployReceipt = await artistUpgrade.deployTransaction.wait();
 
     if (deployReceipt.status === 1) {
-      console.log('Deployment confirmed');
+      console.log(
+        `Deployed: https://${network.name !== 'mainnet' ? network.name + '.' : ''}etherscan.io/address/${
+          artistUpgrade.address
+        }`
+      );
       const initTx = await artistUpgrade.initialize(...dummyArgsForArtistInit, {
         gasLimit: 250_000,
       });
+
       console.log('Initialization started:', initTx.hash);
       await initTx.wait();
-      console.log('Initialization confirmed');
+
+      console.log('Initialization confirmed. Verifying on etherscan...');
+
+      const options: any = {
+        address: artistUpgrade.address,
+        constructorArguments: [],
+      };
+
+      await run('verify:verify', options);
     }
   });
