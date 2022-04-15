@@ -1,5 +1,16 @@
 # @soundxyz/protocol
 
+## 4.2.0
+
+### Minor Changes
+
+- ce5ab60: Sets permissionedQuantity to quantity
+- bc03af4: Skips 0xSplits deployment if not on hardhat network
+
+### Patch Changes
+
+- ffda0ec: Updates hardhat tasks
+
 ## 4.1.0
 
 ### Minor Changes
