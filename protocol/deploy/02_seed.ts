@@ -136,8 +136,6 @@ const func: DeployFunction = async function ({ ethers, waffle, deployments }: Ha
 
     console.log({ name, contractAddress });
 
-    // TODO: when testing with presale, this may need to be changed
-    const presaleQuantity = 0;
     const signerAddress = SOUND_ADMIN_PUBLIC_ADDRESS;
 
     const { price, quantity, royaltyBPS, startTime, endTime, releaseId } = releaseDatum;
@@ -155,7 +153,7 @@ const func: DeployFunction = async function ({ ethers, waffle, deployments }: Ha
       royaltyBPS,
       startTime,
       endTime,
-      presaleQuantity,
+      quantity,
       signerAddress,
       { gasLimit: 200_000 }
     );
