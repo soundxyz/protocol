@@ -17,9 +17,12 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
   const chainId = (await waffle.provider.getNetwork()).chainId;
 
-  console.log({ chainId, deployer: deployer.address }); // eslint-disable-line no-console
-  const networkName = NETWORK_MAP[chainId];
-  console.log(`Deploying to ${networkName}`); // eslint-disable-line no-console
+  console.log({ chainId, deployer: deployer.address }); // eslint-disable-line no-console// eslint-disable-line no-console
+
+  if (chainId != 1337 && chainId != 31337) {
+    console.log(`Skipping 0xSplits deployment since we're on ${NETWORK_MAP[chainId]}`);
+    return;
+  }
 
   const splitMain = await deploy('SplitMain', {
     from: deployer.address,

@@ -9,7 +9,7 @@ import './tasks/prepSplit';
 import './tasks/setAdmin';
 import './tasks/transferOwnership';
 import './tasks/upgradeBeacon';
-import './tasks/verify';
+import './tasks/verifyContract';
 import '@nomiclabs/hardhat-ethers';
 import '@nomiclabs/hardhat-etherscan';
 import '@nomiclabs/hardhat-solhint';
