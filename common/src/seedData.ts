@@ -1,6 +1,5 @@
 import { ethers } from 'ethers';
 import slugify from 'slugify';
-import { v4 as uuid } from 'uuid';
 
 const MAX_UINT32 = 4294967295;
 
@@ -282,7 +281,33 @@ export const auctionParams: Omit<
   },
 ];
 
-export const releaseIds = releaseTitles.map(() => uuid());
+export const releaseIds = [
+  '4b655f37-dfdc-4927-9903-95a48af19967',
+  '72cdab9b-c358-4d7c-a709-9f28fc6dcb2c',
+  '63ae1218-3b35-4a14-8879-4d554d52fe2b',
+  'cb880daa-706c-4312-b427-59b1906f9818',
+  '56d341c8-6bdd-4f32-a57a-03a7526ac889',
+  '80995c74-4983-4e8b-96d1-1cb41eca0a63',
+  '86e1fcd3-0d90-49c5-b10b-7632fbe329d1',
+  'e7085d72-8643-484b-8e2c-e062a2472b2b',
+  '1b52d6af-c3cb-4f31-8d31-f51f546d785d',
+  'ebf6f694-076b-45f0-9d7b-256405451476',
+  '44345418-252a-4f1c-976c-64edced8877e',
+  '867eabf8-e807-4a37-9445-9b8f205fdc2b',
+  '32b97c96-55ff-4839-aa3a-38446dde772f',
+  'c3b6708b-5878-4772-8521-9871b0c5ae6f',
+  '7ba99ddc-2614-40f0-826b-11bbe4a38442',
+  '61f0009d-00b7-44fd-8461-c31422fe5ea0',
+  '5ebe5149-62b2-45e2-a946-4c8dc58228b7',
+  '3af0d551-686e-4097-8407-3134918f25b0',
+  '15937036-f518-4fa2-a24c-74796bc27db7',
+  'ea0f9e8b-30f2-4c88-bd01-14bf9dfef727',
+  '20c91126-c608-4acd-9138-85bede0f75ea',
+  '68aad723-5aa6-4069-8371-f1c597a8faad',
+  'e814eef3-aa79-4b7c-b0e0-5a19c049228a',
+  '59f5dca9-8939-4da0-b5a7-2d3be15a9d8e',
+  '8c322a30-447d-4246-a140-da10f057cdf1',
+];
 
 type ReleaseDatum = {
   price: ethers.BigNumber;
