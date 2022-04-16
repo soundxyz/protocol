@@ -1,14 +1,14 @@
 import { constants, helpers, seedData } from '@soundxyz/common';
-import { Contract } from 'ethers';
+import { Contract, Wallet } from 'ethers';
 import { DeployFunction } from 'hardhat-deploy/types';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { sortBy } from 'lodash';
 
 const { getAuthSignature, getPresaleSignature } = helpers;
 
-const { artistsData, releaseData, usersData, creditSplits } = seedData;
+const { artistsData, releaseData, creditSplits } = seedData;
 
-const { NETWORK_MAP, baseURIs, SOUND_ADMIN_PUBLIC_ADDRESS } = constants;
+const { NETWORK_MAP, baseURIs } = constants;
 
 const func: DeployFunction = async function ({ ethers, waffle, deployments }: HardhatRuntimeEnvironment) {
   const signers = await ethers.getSigners();
@@ -136,8 +136,6 @@ const func: DeployFunction = async function ({ ethers, waffle, deployments }: Ha
 
     console.log({ name, contractAddress });
 
-    const signerAddress = SOUND_ADMIN_PUBLIC_ADDRESS;
-
     const { price, quantity, royaltyBPS, startTime, endTime, releaseId } = releaseDatum;
 
     // If splitData exists, then use that address, otherwise use the current artist's wallet
@@ -145,6 +143,14 @@ const func: DeployFunction = async function ({ ethers, waffle, deployments }: Ha
       console.log(`Release ${releaseId} is getting split! Using: ${splitData.splitAddress} as fundingRecipient`);
     }
     const fundingRecipient = splitData?.splitAddress || currentArtistWallet.address;
+
+    if (!process.env.EDITION_SIGNER) {
+      throw new Error('MISSING EDITION_SIGNER');
+    }
+
+    const signerAddress = new Wallet(process.env.EDITION_SIGNER).address;
+
+    console.log(process.env.EDITION_SIGNER, 'signerAddress: ', signerAddress);
 
     const tx = await artistContract.createEdition(
       fundingRecipient,
