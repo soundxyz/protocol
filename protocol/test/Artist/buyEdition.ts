@@ -343,9 +343,24 @@ export function buyEditionTests(config: Config) {
   });
 
   it(`creates an event log for the purchase`, async () => {
-    const { artistContract, price, miscAccounts } = await setUpContract();
+    const { artistContract, price, miscAccounts } = await setUpContract({
+      permissionedQuantity: BigNumber.from(MAX_UINT32),
+      quantity: BigNumber.from(5),
+      startTime: BigNumber.from(currentSeconds() + 99999999),
+    });
+
     const purchaser = miscAccounts[0];
-    const tx = await artistContract.connect(purchaser).buyEdition(EDITION_ID, EMPTY_SIGNATURE, NULL_TICKET_NUM, {
+    const ticketNum = 1;
+    const signature = await getPresaleSignature({
+      chainId: CHAIN_ID,
+      contractAddress: artistContract.address,
+      provider,
+      editionId: EDITION_ID,
+      buyerAddress: purchaser.address,
+      ticketNumber: ticketNum.toString(),
+      privateKey: process.env.ADMIN_PRIVATE_KEY,
+    });
+    const tx = await artistContract.connect(purchaser).buyEdition(EDITION_ID, signature, ticketNum, {
       value: price,
     });
     const receipt = await tx.wait();
@@ -358,6 +373,7 @@ export function buyEditionTests(config: Config) {
     await expect(purchaseEvent.tokenId.toString()).to.eq(tokenId);
     await expect(purchaseEvent.buyer.toString()).to.eq(purchaser.address);
     await expect(purchaseEvent.numSold.toString()).to.eq('1');
+    await expect(purchaseEvent.ticketNumber.toString()).to.eq(ticketNum.toString());
   });
 
   it(`updates the number sold for the editions`, async () => {
