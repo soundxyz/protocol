@@ -118,7 +118,8 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
         // `numSold` at time of purchase represents the "serial number" of the NFT.
         uint32 numSold,
         // The account that paid for and received the NFT.
-        address indexed buyer
+        address indexed buyer,
+        uint256 ticketNumber
     );
 
     event AuctionTimeSet(TimeType timeType, uint256 editionId, uint32 indexed newTime);
@@ -277,7 +278,7 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
         // Mint a new token for the sender, using the `tokenId`.
         _mint(msg.sender, tokenId);
 
-        emit EditionPurchased(_editionId, tokenId, newNumSold, msg.sender);
+        emit EditionPurchased(_editionId, tokenId, newNumSold, msg.sender, _ticketNumber);
     }
 
     function withdrawFunds(uint256 _editionId) external {
