@@ -150,7 +150,7 @@ const func: DeployFunction = async function ({ ethers, waffle, deployments }: Ha
 
     const signerAddress = new Wallet(process.env.EDITION_SIGNER).address;
 
-    console.log('signerAddress: ', signerAddress);
+    console.log(process.env.EDITION_SIGNER, 'signerAddress: ', signerAddress);
 
     const tx = await artistContract.createEdition(
       fundingRecipient,
@@ -159,7 +159,7 @@ const func: DeployFunction = async function ({ ethers, waffle, deployments }: Ha
       royaltyBPS,
       startTime,
       endTime,
-      quantity, // permissionedQuantity
+      quantity,
       signerAddress,
       { gasLimit: 200_000 }
     );
