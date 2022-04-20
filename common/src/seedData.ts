@@ -247,6 +247,10 @@ export const artistContracts = [
   '0xeEE6F0DDd6a83A69aFBf53d0f9071420A9de43e7',
 ];
 
+const nowInSeconds = Math.floor(Date.now() / 1000);
+export const ONCHAIN_START_TIME_DAYS_OFFSET = 3;
+const onChainStartTime = nowInSeconds + ONCHAIN_START_TIME_DAYS_OFFSET * 24 * 60 * 60;
+
 export const auctionParams: Omit<
   ReleaseDatum,
   'releaseId' | 'title' | 'titleSlug' | 'imageKey' | 'goldenEggImageKey' | 'audioKey' | 'duration'
@@ -255,28 +259,28 @@ export const auctionParams: Omit<
     price: ethers.utils.parseUnits('0.1', 'ether'),
     quantity: 25,
     royaltyBPS: 1000,
-    startTime: ethers.BigNumber.from(Math.floor(Date.now() / 1000) + 86400),
+    startTime: ethers.BigNumber.from(onChainStartTime),
     endTime: ethers.BigNumber.from(MAX_UINT32),
   },
   {
     price: ethers.utils.parseUnits('0.02', 'ether'),
     quantity: 30,
     royaltyBPS: 1000,
-    startTime: ethers.BigNumber.from(Math.floor(Date.now() / 1000)),
+    startTime: ethers.BigNumber.from(onChainStartTime),
     endTime: ethers.BigNumber.from(MAX_UINT32),
   },
   {
     price: ethers.utils.parseUnits('0.05', 'ether'),
     quantity: 3,
     royaltyBPS: 500,
-    startTime: ethers.BigNumber.from(0),
+    startTime: ethers.BigNumber.from(nowInSeconds),
     endTime: ethers.BigNumber.from(MAX_UINT32),
   },
   {
     price: ethers.utils.parseUnits('0.01', 'ether'),
     quantity: 10,
     royaltyBPS: 100,
-    startTime: ethers.BigNumber.from(Math.floor(Date.now() / 1000) - 86400), // yesterday
+    startTime: ethers.BigNumber.from(nowInSeconds - 86400), // yesterday
     endTime: ethers.BigNumber.from(MAX_UINT32),
   },
 ];
