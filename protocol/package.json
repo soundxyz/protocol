@@ -15,13 +15,14 @@
     "build:hh": "hardhat compile --force",
     "clean": "rm -rf artifacts cache dist",
     "deploy-upgrade": "hardhat deploy-upgrade",
-    "deploy:local": "ARTIST_VERSION=3 hardhat node",
-    "deploy:mainnet": "ARTIST_VERSION=3 hardhat --network mainnet deploy",
-    "deploy:rinkeby": "ARTIST_VERSION=3 hardhat --network rinkeby deploy",
+    "deploy:local": "ARTIST_VERSION=4 hardhat node",
+    "deploy:mainnet": "ARTIST_VERSION=4 hardhat --network mainnet deploy",
+    "deploy:rinkeby": "ARTIST_VERSION=4 hardhat --network rinkeby deploy",
     "prepack": "pnpm -w build && bob-tsm build.ts",
     "postpublish": "gh-release",
     "seed:rinkeby": "DEPLOY_SEED_DATA=true pnpm deploy:rinkeby",
     "test": "hardhat test",
+    "coverage": "hardhat coverage",
     "test-watcher": "bob-tsm --cjs scripts/test-watcher.ts",
     "test-watcher:rinkeby": "NEXT_PUBLIC_VERCEL_ENV=preview pnpm test-watcher",
     "transfer-ownership": "hardhat transfer-ownership",
@@ -50,7 +51,8 @@
     "hardhat-gas-reporter": "^1.0.4",
     "lodash": "^4.17.21",
     "solhint": "^3.3.6",
-    "typechain": "^5.1.2"
+    "typechain": "^5.1.2",
+    "solidity-coverage": "^0.7.20"
   },
   "devDependencies": {
     "@ethersproject/providers": "^5.5.3",

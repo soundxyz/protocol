@@ -2,11 +2,25 @@
 pragma solidity 0.8.7;
 
 /*
- ██████  ██████  ██    ██ ███    ██ ██████  
-██      ██    ██ ██    ██ ████   ██ ██   ██ 
-███████ ██    ██ ██    ██ ██ ██  ██ ██   ██ 
-     ██ ██    ██ ██    ██ ██  ██ ██ ██   ██ 
-███████  ██████   ██████  ██   ████ ██████ 
+               ^###############################################&5               
+               ?@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@&               
+   !PPPPPPPPPPP&@@@@@@@@@@@@?!!!!!!!!!!7&@@@@@@@@@@@@@@@@@@@@@@@@BPPPPPPPPPPJ   
+   B@@@@@@@@@@@@@@@@@@@@@@@&            #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@.  
+   B@@@@@@@@@@@@@@@@@@@@@@@&            ~55555555555&@@@@@@@@@@@@@@@@@@@@@@@@.  
+   B@@@@@@@@@@@@@@@@@@@@@@@&                        J@@@@@@@@@@@@@@@@@@@@@@@@.  
+   B@@@@@@@@@@@@@@@@@@@@@@@&~::::::::::::::::::::::.~B######################P   
+   B@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@7                           
+   5@&&&&&&&&&&&&&&&&&&&&&&@@@@@@@@@@@@@@@@@@@@@@@@@5                           
+    .......................!@@@@@@@@@@@@@@@@@@@@@@@@@&&&&&&&&&&&&&&&&&&&&&&&B   
+                           .@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@&   
+   7BBBBBBBBBBBBBBBBBBBBBBBY:^^^^^^^^^^^^^^^^^^^^^^^B@@@@@@@@@@@@@@@@@@@@@@@&   
+   B@@@@@@@@@@@@@@@@@@@@@@@&                        Y@@@@@@@@@@@@@@@@@@@@@@@&   
+   B@@@@@@@@@@@@@@@@@@@@@@@@PJYYYYYYYYY?            5@@@@@@@@@@@@@@@@@@@@@@@&   
+   B@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@:           Y@@@@@@@@@@@@@@@@@@@@@@@&   
+   !GGGGGGGGGGG&@@@@@@@@@@@@@@@@@@@@@@@@5~~~~~~~~~~~#@@@@@@@@@@@@BGGGGGGGGGGJ   
+               J@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@G               
+               ~&&&&#&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&?                 
+
 */
 
 import {IERC2981Upgradeable, IERC165Upgradeable} from '@openzeppelin/contracts-upgradeable/interfaces/IERC2981Upgradeable.sol';
@@ -14,7 +28,6 @@ import {ERC721Upgradeable} from '@openzeppelin/contracts-upgradeable/token/ERC72
 import {OwnableUpgradeable} from '@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol';
 import {LibUintToString} from './LibUintToString.sol';
 import {CountersUpgradeable} from '@openzeppelin/contracts-upgradeable/utils/CountersUpgradeable.sol';
-import {ArtistCreator} from './ArtistCreator.sol';
 import {ECDSA} from '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
 
 /// @title Artist
@@ -77,8 +90,11 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
     mapping(uint256 => uint256) public withdrawnForEdition;
     // The permissioned typehash (used for checking signature validity)
     bytes32 private constant PERMISSIONED_SALE_TYPEHASH =
-        keccak256('EditionInfo(address contractAddress,address buyerAddress,uint256 editionId)');
+        keccak256('EditionInfo(address contractAddress,address buyerAddress,uint256 editionId,uint256 ticketNumber)');
+    // Domain separator - used to prevent replay attacks using signatures from different networks
     bytes32 private immutable DOMAIN_SEPARATOR;
+    // Used to track which tokens have been claimed. editionId -> index -> bit array
+    mapping(uint256 => mapping(uint256 => uint256)) ticketNumbers;
 
     // ================================
     // EVENTS
@@ -102,7 +118,8 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
         // `numSold` at time of purchase represents the "serial number" of the NFT.
         uint32 numSold,
         // The account that paid for and received the NFT.
-        address indexed buyer
+        address indexed buyer,
+        uint256 ticketNumber
     );
 
     event AuctionTimeSet(TimeType timeType, uint256 editionId, uint32 indexed newTime);
@@ -162,7 +179,6 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
         uint32 _permissionedQuantity,
         address _signerAddress
     ) external onlyOwner {
-        require(_permissionedQuantity < _quantity + 1, 'Permissioned quantity too big');
         require(_quantity > 0, 'Must set quantity');
         require(_fundingRecipient != address(0), 'Must set fundingRecipient');
         require(_endTime > _startTime, 'End time must be greater than start time');
@@ -201,11 +217,17 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
     /// @notice Creates a new token for the given edition, and assigns it to the buyer
     /// @param _editionId The id of the edition to purchase
     /// @param _signature A signed message for authorizing permissioned purchases
-    function buyEdition(uint256 _editionId, bytes calldata _signature) external payable {
+    /// @param _ticketNumber Ticket number required for validating this buyer hasn't already bought.
+    function buyEdition(
+        uint256 _editionId,
+        bytes calldata _signature,
+        uint256 _ticketNumber
+    ) external payable {
         // Caching variables locally to reduce reads
         uint256 price = editions[_editionId].price;
         uint32 quantity = editions[_editionId].quantity;
         uint32 numSold = editions[_editionId].numSold;
+        uint32 newNumSold = numSold + 1;
         uint32 startTime = editions[_editionId].startTime;
         uint32 endTime = editions[_editionId].endTime;
         uint32 permissionedQuantity = editions[_editionId].permissionedQuantity;
@@ -213,21 +235,24 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
         // Check that the edition exists. Note: this is redundant
         // with the next check, but it is useful for clearer error messaging.
         require(quantity > 0, 'Edition does not exist');
-        // Check that there are still tokens available to purchase.
-        require(numSold < quantity, 'This edition is already sold out.');
         // Check that the sender is paying the correct amount.
         require(msg.value >= price, 'Must send enough to purchase the edition.');
 
-        // If the open auction hasn't started...
+        // If the public auction hasn't started...
         if (startTime > block.timestamp) {
             // Check that permissioned tokens are still available
-            require(
-                permissionedQuantity > 0 && numSold < permissionedQuantity,
-                'No permissioned tokens available & open auction not started'
-            );
+            require(numSold < permissionedQuantity, 'No permissioned tokens available & open auction not started');
 
             // Check that the signature is valid.
-            require(getSigner(_signature, _editionId) == editions[_editionId].signerAddress, 'Invalid signer');
+            require(
+                getSigner(_signature, _editionId, _ticketNumber) == editions[_editionId].signerAddress,
+                'Invalid signer'
+            );
+        } else {
+            // Check that there are still tokens available to purchase.
+            // Only need to check this for the public sale (after the start time)
+            // so we can accomodate open editions
+            require(numSold < quantity, 'This edition is already sold out.');
         }
 
         // Don't allow purchases after the end time
@@ -236,9 +261,9 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
         // Create the token id by packing editionId in the top bits
         uint256 tokenId;
         unchecked {
-            tokenId = (_editionId << 128) | (numSold + 1);
+            tokenId = (_editionId << 128) | newNumSold;
             // Increment the number of tokens sold for this edition.
-            editions[_editionId].numSold = numSold + 1;
+            editions[_editionId].numSold = newNumSold;
         }
 
         // If fundingRecipient is the owner (artist's wallet), update the edition's balance & don't send the funds
@@ -253,7 +278,7 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
         // Mint a new token for the sender, using the `tokenId`.
         _mint(msg.sender, tokenId);
 
-        emit EditionPurchased(_editionId, tokenId, editions[_editionId].numSold, msg.sender);
+        emit EditionPurchased(_editionId, tokenId, newNumSold, msg.sender, _ticketNumber);
     }
 
     function withdrawFunds(uint256 _editionId) external {
@@ -289,8 +314,6 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
 
     /// @notice Sets the permissioned quantity for an edition
     function setPermissionedQuantity(uint256 _editionId, uint32 _permissionedQuantity) external onlyOwner {
-        // Check that the permissioned quantity is less than the total quantity
-        require(_permissionedQuantity < editions[_editionId].quantity + 1, 'Must not exceed quantity');
         // Prevent setting to permissioned quantity when there is no signer address
         require(editions[_editionId].signerAddress != address(0), 'Edition must have a signer');
 
@@ -364,6 +387,8 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
         return atEditionId.current() - 1; // because atEditionId is incremented after each edition is created
     }
 
+    /// @notice Returns the edition id for a given token id
+    /// @param _tokenId token id
     function tokenToEdition(uint256 _tokenId) public view returns (uint256) {
         // Check the top bits to see if the edition id is there
         uint256 editionId = _tokenId >> 128;
@@ -377,6 +402,8 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
         return editionId;
     }
 
+    /// @notice Returns a list of owner addresses for a given list of token ids
+    /// @param _tokenIds List of token ids
     function ownersOfTokenIds(uint256[] calldata _tokenIds) external view returns (address[] memory) {
         address[] memory owners = new address[](_tokenIds.length);
         for (uint256 i = 0; i < _tokenIds.length; i++) {
@@ -385,8 +412,23 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
         return owners;
     }
 
+    function checkTicketNumbers(uint256 _editionId, uint256[] calldata _ticketNumbers)
+        external
+        view
+        returns (bool[] memory)
+    {
+        bool[] memory claimed = new bool[](_ticketNumbers.length);
+
+        for (uint256 i = 0; i < _ticketNumbers.length; i++) {
+            (uint256 storedBit, , , ) = _getBitForTicketNumber(_editionId, _ticketNumbers[i]);
+            claimed[i] = storedBit == 1;
+        }
+
+        return claimed;
+    }
+
     // ================================
-    // FUNCTIONS - PRIVATE
+    // PRIVATE FUNCTIONS
     // ================================
 
     /// @notice Sends funds to an address
@@ -404,15 +446,66 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
     /// @param _editionId edition id
     /// @return address of signer
     /// @dev https://eips.ethereum.org/EIPS/eip-712
-    function getSigner(bytes calldata _signature, uint256 _editionId) private view returns (address) {
+    function getSigner(
+        bytes calldata _signature,
+        uint256 _editionId,
+        uint256 _ticketNumber
+    ) private returns (address) {
+        // Check that the ticket number is within the reserved range for the edition
+        // permissionedQuantity is uint32, so ticketNumber can't exceed max uint32
+        require(_ticketNumber < 2**32, 'Ticket number exceeds max');
+
+        // gets the stored bit
+        (
+            uint256 storedBit,
+            uint256 localGroup,
+            uint256 localGroupOffset,
+            uint256 ticketNumbersIdx
+        ) = _getBitForTicketNumber(_editionId, _ticketNumber);
+
+        require(storedBit == 0, 'Invalid ticket number or NFT already claimed');
+
+        // Flip the bit to 1 to indicate that the ticket has been claimed
+        ticketNumbers[_editionId][ticketNumbersIdx] = localGroup | (uint256(1) << localGroupOffset);
+
         bytes32 digest = keccak256(
             abi.encodePacked(
                 '\x19\x01',
                 DOMAIN_SEPARATOR,
-                keccak256(abi.encode(PERMISSIONED_SALE_TYPEHASH, address(this), msg.sender, _editionId))
+                keccak256(abi.encode(PERMISSIONED_SALE_TYPEHASH, address(this), msg.sender, _editionId, _ticketNumber))
             )
         );
-        address recoveredAddress = digest.recover(_signature);
-        return recoveredAddress;
+        return digest.recover(_signature);
+    }
+
+    /// @notice Gets the bit variables associated with a ticket number
+    /// @param _editionId edition id
+    /// @param _ticketNumber ticket number
+    function _getBitForTicketNumber(uint256 _editionId, uint256 _ticketNumber)
+        private
+        view
+        returns (
+            uint256,
+            uint256,
+            uint256,
+            uint256
+        )
+    {
+        uint256 localGroup; // the bit array for this ticket number
+        uint256 ticketNumbersIdx; // the index of the the local group
+        uint256 localGroupOffset; // the offset/index for the ticket number in the local group
+        uint256 storedBit; // the stored bit at this ticket number's index within the local group
+        unchecked {
+            ticketNumbersIdx = _ticketNumber / 256;
+            localGroupOffset = _ticketNumber % 256;
+        }
+
+        // cache the local group for efficiency
+        localGroup = ticketNumbers[_editionId][ticketNumbersIdx];
+
+        // gets the stored bit
+        storedBit = (localGroup >> localGroupOffset) & uint256(1);
+
+        return (storedBit, localGroup, localGroupOffset, ticketNumbersIdx);
     }
 }
