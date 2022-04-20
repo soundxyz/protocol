@@ -1,5 +1,29 @@
 # @soundxyz/protocol
 
+## 5.0.0
+
+### Major Changes
+
+- ada177d: - Implements open editions
+  - Adds ticketNumber requirement to signature to prevent multiple purchases
+
+### Minor Changes
+
+- ada177d: Sets correct EDITION_SIGNER
+- ada177d: Emits ticket number from EditionPurchased event
+- ada177d: Refactors Artist.sol tests
+
+  - Creates Config class to make test dependencies clearer (no global scope)
+  - Breaks tests out into separate files
+
+- ada177d: Adds checkTicketNumbers view function
+
+### Patch Changes
+
+- Updated dependencies [ada177d]
+- Updated dependencies [ada177d]
+  - @soundxyz/common@3.0.0
+
 ## 4.2.0
 
 ### Minor Changes

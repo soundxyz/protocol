@@ -1,5 +1,16 @@
 # @soundxyz/common
 
+## 3.0.0
+
+### Major Changes
+
+- ada177d: - Implements open editions
+  - Adds ticketNumber requirement to signature to prevent multiple purchases
+
+### Minor Changes
+
+- ada177d: Use persistent release ids
+
 ## 2.6.0
 
 ### Minor Changes
