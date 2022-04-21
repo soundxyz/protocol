@@ -1,6 +1,30 @@
 import { ethers } from 'ethers';
 import slugify from 'slugify';
 
+type ReleaseDatum = {
+  price: ethers.BigNumber;
+  quantity: number;
+  permissionedQuantity: number;
+  royaltyBPS: number;
+  startTime: ethers.BigNumber;
+  endTime: ethers.BigNumber;
+  releaseId: string;
+  title: string;
+  titleSlug: string;
+  imageKey: string;
+  goldenEggImageKey: string;
+  audioKey: string;
+  duration: number;
+};
+
+type ArtistData = {
+  name: string;
+  description: string;
+  soundHandle: string;
+  openseaCollectionUrl: string;
+  user: { connect: { publicAddress: string } };
+}[];
+
 const MAX_UINT32 = 4294967295;
 
 export const artistNames = [
@@ -217,14 +241,6 @@ export const usersData = [
   },
 ];
 
-type ArtistData = {
-  name: string;
-  description: string;
-  soundHandle: string;
-  openseaCollectionUrl: string;
-  user: { connect: { publicAddress: string } };
-}[];
-
 export const artistsData: ArtistData = [];
 
 usersData
@@ -247,6 +263,10 @@ export const artistContracts = [
   '0xeEE6F0DDd6a83A69aFBf53d0f9071420A9de43e7',
 ];
 
+const nowInSeconds = Math.floor(Date.now() / 1000);
+export const ONCHAIN_START_TIME_DAYS_OFFSET = 3;
+const onChainStartTime = nowInSeconds + ONCHAIN_START_TIME_DAYS_OFFSET * 24 * 60 * 60;
+
 export const auctionParams: Omit<
   ReleaseDatum,
   'releaseId' | 'title' | 'titleSlug' | 'imageKey' | 'goldenEggImageKey' | 'audioKey' | 'duration'
@@ -254,29 +274,33 @@ export const auctionParams: Omit<
   {
     price: ethers.utils.parseUnits('0.1', 'ether'),
     quantity: 25,
+    permissionedQuantity: 25,
     royaltyBPS: 1000,
-    startTime: ethers.BigNumber.from(Math.floor(Date.now() / 1000) + 86400),
+    startTime: ethers.BigNumber.from(onChainStartTime),
     endTime: ethers.BigNumber.from(MAX_UINT32),
   },
   {
     price: ethers.utils.parseUnits('0.02', 'ether'),
     quantity: 30,
+    permissionedQuantity: 30,
     royaltyBPS: 1000,
-    startTime: ethers.BigNumber.from(Math.floor(Date.now() / 1000)),
+    startTime: ethers.BigNumber.from(onChainStartTime),
     endTime: ethers.BigNumber.from(MAX_UINT32),
   },
   {
     price: ethers.utils.parseUnits('0.05', 'ether'),
     quantity: 3,
+    permissionedQuantity: 3,
     royaltyBPS: 500,
-    startTime: ethers.BigNumber.from(0),
+    startTime: ethers.BigNumber.from(nowInSeconds),
     endTime: ethers.BigNumber.from(MAX_UINT32),
   },
   {
     price: ethers.utils.parseUnits('0.01', 'ether'),
     quantity: 10,
+    permissionedQuantity: 0,
     royaltyBPS: 100,
-    startTime: ethers.BigNumber.from(Math.floor(Date.now() / 1000) - 86400), // yesterday
+    startTime: ethers.BigNumber.from(nowInSeconds - 86400), // yesterday
     endTime: ethers.BigNumber.from(MAX_UINT32),
   },
 ];
@@ -308,21 +332,6 @@ export const releaseIds = [
   '59f5dca9-8939-4da0-b5a7-2d3be15a9d8e',
   '8c322a30-447d-4246-a140-da10f057cdf1',
 ];
-
-type ReleaseDatum = {
-  price: ethers.BigNumber;
-  quantity: number;
-  royaltyBPS: number;
-  startTime: ethers.BigNumber;
-  endTime: ethers.BigNumber;
-  releaseId: string;
-  title: string;
-  titleSlug: string;
-  imageKey: string;
-  goldenEggImageKey: string;
-  audioKey: string;
-  duration: number;
-};
 
 export const releaseData: ReleaseDatum[] = releaseIds.map((releaseId, idx) => {
   const data = { ...auctionParams[idx % auctionParams.length] } as ReleaseDatum;
