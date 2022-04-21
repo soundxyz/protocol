@@ -1,5 +1,11 @@
 # @soundxyz/common
 
+## 3.1.0
+
+### Minor Changes
+
+- 5a74507: Adjusts seed release params to enable presales
+
 ## 3.0.0
 
 ### Major Changes

@@ -95,7 +95,7 @@ importers:
       '@pnpm/exportable-manifest': ^2.2.4
       '@pnpm/types': ^7.9.0
       '@rari-capital/solmate': ^6.2.0
-      '@soundxyz/common': workspace:^3.0.0
+      '@soundxyz/common': workspace:^3.1.0
       '@typechain/ethers-v5': ^7.1.0
       '@typechain/hardhat': ^2.3.0
       '@types/chai': ^4.3.0
