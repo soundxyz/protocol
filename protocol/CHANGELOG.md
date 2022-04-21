@@ -1,5 +1,16 @@
 # @soundxyz/protocol
 
+## 5.1.0
+
+### Minor Changes
+
+- 5a74507: Uses permissionedQuantity in local seed deploy script
+
+### Patch Changes
+
+- Updated dependencies [5a74507]
+  - @soundxyz/common@3.1.0
+
 ## 5.0.0
 
 ### Major Changes
