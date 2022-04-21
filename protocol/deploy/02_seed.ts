@@ -136,7 +136,7 @@ const func: DeployFunction = async function ({ ethers, waffle, deployments }: Ha
 
     console.log({ name, contractAddress });
 
-    const { price, quantity, royaltyBPS, startTime, endTime, releaseId } = releaseDatum;
+    const { price, quantity, royaltyBPS, startTime, endTime, releaseId, permissionedQuantity } = releaseDatum;
 
     // If splitData exists, then use that address, otherwise use the current artist's wallet
     if (splitData) {
@@ -159,7 +159,7 @@ const func: DeployFunction = async function ({ ethers, waffle, deployments }: Ha
       royaltyBPS,
       startTime,
       endTime,
-      quantity,
+      permissionedQuantity,
       signerAddress,
       { gasLimit: 200_000 }
     );
