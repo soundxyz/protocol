@@ -12,7 +12,7 @@ pragma solidity 0.8.7;
 import {IERC2981Upgradeable, IERC165Upgradeable} from '@openzeppelin/contracts-upgradeable/interfaces/IERC2981Upgradeable.sol';
 import {ERC721Upgradeable} from '@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol';
 import {OwnableUpgradeable} from '@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol';
-import {Strings} from './Strings.sol';
+import {Strings} from '@openzeppelin/contracts/utils/Strings.sol';
 import {CountersUpgradeable} from '@openzeppelin/contracts-upgradeable/utils/CountersUpgradeable.sol';
 
 // This contract is a combination of Mirror.xyz's Editions.sol and Zora's SingleEditionMintable.sol

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity 0.8.7;
+pragma solidity 0.8.14;
 
 /*
                ^###############################################&5               
@@ -23,32 +23,47 @@ pragma solidity 0.8.7;
 
 */
 
-import {IERC2981Upgradeable, IERC165Upgradeable} from '@openzeppelin/contracts-upgradeable/interfaces/IERC2981Upgradeable.sol';
-import {ERC721Upgradeable} from '@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol';
-import {OwnableUpgradeable} from '@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol';
-import {LibUintToString} from './utils/LibUintToString.sol';
-import {CountersUpgradeable} from '@openzeppelin/contracts-upgradeable/utils/CountersUpgradeable.sol';
-import {ECDSA} from '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
+import '@openzeppelin/contracts-upgradeable/interfaces/IERC2981Upgradeable.sol';
+import '@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol';
+import '@openzeppelin/contracts-upgradeable/utils/CountersUpgradeable.sol';
+import '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
+import '@openzeppelin/contracts/utils/Strings.sol';
+import './utils/AccessManager.sol';
 
 /// @title Artist
 /// @author SoundXYZ - @gigamesh & @vigneshka
 /// @notice This contract is used to create & sell song NFTs for the artist who owns the contract.
 /// @dev Started as a fork of Mirror's Editions.sol https://github.com/mirror-xyz/editions-v1/blob/main/contracts/Editions.sol
-contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable {
+contract ArtistV5 is ERC721Upgradeable, IERC2981Upgradeable, AccessManager {
+    // ================================
+    // STORAGE
+    // ================================
+
+    // The permissioned typehash (used for checking signature validity)
+    bytes32 public constant PERMISSIONED_SALE_TYPEHASH =
+        keccak256('EditionInfo(address contractAddress,address buyerAddress,uint256 editionId,uint256 ticketNumber)');
+    // Domain separator - used to prevent replay attacks using signatures from different networks
+    bytes32 public immutable DOMAIN_SEPARATOR;
+    // The default baseURI for the contract
+    string internal baseURI;
+
+    CountersUpgradeable.Counter public atTokenId; // DEPRECATED IN V3
+    CountersUpgradeable.Counter public atEditionId;
+
+    // Mapping of edition id to descriptive data.
+    mapping(uint256 => Edition) public editions;
+    // <DEPRECATED IN V3> Mapping of token id to edition id.
+    mapping(uint256 => uint256) public _tokenToEdition;
+    // The amount of funds that have been deposited for a given edition.
+    mapping(uint256 => uint256) public depositedForEdition;
+    // The amount of funds that have already been withdrawn for a given edition.
+    mapping(uint256 => uint256) public withdrawnForEdition;
+    // Used to track which tokens have been claimed. editionId -> index -> bit array
+    mapping(uint256 => mapping(uint256 => uint256)) ticketNumbers;
+
     // ================================
     // TYPES
     // ================================
-
-    using LibUintToString for uint256;
-    using CountersUpgradeable for CountersUpgradeable.Counter;
-    using ECDSA for bytes32;
-
-    enum TimeType {
-        START,
-        END
-    }
-
-    // ============ Structs ============
 
     struct Edition {
         // The account that will receive sales revenue.
@@ -69,32 +84,17 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
         uint32 permissionedQuantity;
         // whitelist signer address
         address signerAddress;
+        // base uri for the edition
+        string baseURI;
     }
 
-    // ================================
-    // STORAGE
-    // ================================
+    using CountersUpgradeable for CountersUpgradeable.Counter;
+    using ECDSA for bytes32;
 
-    string internal baseURI;
-
-    CountersUpgradeable.Counter private atTokenId; // DEPRECATED IN V3
-    CountersUpgradeable.Counter private atEditionId;
-
-    // Mapping of edition id to descriptive data.
-    mapping(uint256 => Edition) public editions;
-    // <DEPRECATED IN V3> Mapping of token id to edition id.
-    mapping(uint256 => uint256) private _tokenToEdition;
-    // The amount of funds that have been deposited for a given edition.
-    mapping(uint256 => uint256) public depositedForEdition;
-    // The amount of funds that have already been withdrawn for a given edition.
-    mapping(uint256 => uint256) public withdrawnForEdition;
-    // The permissioned typehash (used for checking signature validity)
-    bytes32 private constant PERMISSIONED_SALE_TYPEHASH =
-        keccak256('EditionInfo(address contractAddress,address buyerAddress,uint256 editionId,uint256 ticketNumber)');
-    // Domain separator - used to prevent replay attacks using signatures from different networks
-    bytes32 private immutable DOMAIN_SEPARATOR;
-    // Used to track which tokens have been claimed. editionId -> index -> bit array
-    mapping(uint256 => mapping(uint256 => uint256)) ticketNumbers;
+    enum TimeType {
+        START,
+        END
+    }
 
     // ================================
     // EVENTS
@@ -128,6 +128,8 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
 
     event PermissionedQuantitySet(uint256 editionId, uint32 permissionedQuantity);
 
+    event BaseURISet(uint256 editionId, string baseURI);
+
     // ================================
     // PUBLIC & EXTERNAL WRITABLE FUNCTIONS
     // ================================
@@ -140,21 +142,24 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
     /// @notice Initializes the contract
     /// @param _owner Owner of edition
     /// @param _name Name of artist
+    /// @param _symbol Symbol for the artist
+    /// @param _baseURI Default base URI for all editions
     function initialize(
         address _owner,
-        uint256 _artistId,
         string memory _name,
         string memory _symbol,
         string memory _baseURI
     ) public initializer {
         __ERC721_init(_name, _symbol);
-        __Ownable_init();
+        __AccessManager_init();
 
         // Set ownership to original sender of contract call
         transferOwnership(_owner);
 
-        // E.g. https://sound.xyz/api/metadata/[artistId]/
-        baseURI = string(abi.encodePacked(_baseURI, _artistId.toString(), '/'));
+        // baseURI override only for testnets
+        if (block.chainid != 1) {
+            baseURI = _baseURI;
+        }
 
         // Set edition id start to be 1 not 0
         atEditionId.increment();
@@ -169,6 +174,8 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
     /// @param _endTime The end time of the auction, in seconds since unix epoch.
     /// @param _permissionedQuantity The quantity of tokens that require a signature to buy.
     /// @param _signerAddress signer address.
+    /// @param _editionId The expected edition ID
+    /// @param _baseURI The base URI for the edition
     function createEdition(
         address payable _fundingRecipient,
         uint256 _price,
@@ -177,11 +184,14 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
         uint32 _startTime,
         uint32 _endTime,
         uint32 _permissionedQuantity,
-        address _signerAddress
-    ) external onlyOwner {
+        address _signerAddress,
+        uint256 _editionId,
+        string memory _baseURI
+    ) external checkPermission(ADMIN_ROLE) {
         require(_quantity > 0, 'Must set quantity');
         require(_fundingRecipient != address(0), 'Must set fundingRecipient');
         require(_endTime > _startTime, 'End time must be greater than start time');
+        require(_editionId == atEditionId.current(), 'Wrong edition ID');
 
         if (_permissionedQuantity > 0) {
             require(_signerAddress != address(0), 'Signer address cannot be 0');
@@ -196,7 +206,8 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
             startTime: _startTime,
             endTime: _endTime,
             permissionedQuantity: _permissionedQuantity,
-            signerAddress: _signerAddress
+            signerAddress: _signerAddress,
+            baseURI: _baseURI
         });
 
         emit EditionCreated(
@@ -237,6 +248,8 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
         require(quantity > 0, 'Edition does not exist');
         // Check that the sender is paying the correct amount.
         require(msg.value >= price, 'Must send enough to purchase the edition.');
+        // Don't allow purchases after the end time
+        require(endTime > block.timestamp, 'Auction has ended');
 
         // If the public auction hasn't started...
         if (startTime > block.timestamp) {
@@ -254,9 +267,6 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
             // so we can accomodate open editions
             require(numSold < quantity, 'This edition is already sold out.');
         }
-
-        // Don't allow purchases after the end time
-        require(endTime > block.timestamp, 'Auction has ended');
 
         // Create the token id by packing editionId in the top bits
         uint256 tokenId;
@@ -281,6 +291,8 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
         emit EditionPurchased(_editionId, tokenId, newNumSold, msg.sender, _ticketNumber);
     }
 
+    /// @notice Withdraws from the Artist to the fundingRecipient for an edition
+    /// @param _editionId The id of the edition to withdraw from
     function withdrawFunds(uint256 _editionId) external {
         // Compute the amount available for withdrawing from this edition.
         uint256 remainingForEdition = depositedForEdition[_editionId] - withdrawnForEdition[_editionId];
@@ -293,19 +305,25 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
     }
 
     /// @notice Sets the start time for an edition
-    function setStartTime(uint256 _editionId, uint32 _startTime) external onlyOwner {
+    /// @param _editionId The id of the edition to set the start time for
+    /// @param _startTime The start time to set (in seconds since unix epoch)
+    function setStartTime(uint256 _editionId, uint32 _startTime) external checkPermission(ADMIN_ROLE) {
         editions[_editionId].startTime = _startTime;
         emit AuctionTimeSet(TimeType.START, _editionId, _startTime);
     }
 
     /// @notice Sets the end time for an edition
-    function setEndTime(uint256 _editionId, uint32 _endTime) external onlyOwner {
+    /// @param _editionId The id of the edition to set the end time for
+    /// @param _endTime The end time to set (in seconds since unix epoch)
+    function setEndTime(uint256 _editionId, uint32 _endTime) external checkPermission(ADMIN_ROLE) {
         editions[_editionId].endTime = _endTime;
         emit AuctionTimeSet(TimeType.END, _editionId, _endTime);
     }
 
     /// @notice Sets the signature address of an edition
-    function setSignerAddress(uint256 _editionId, address _newSignerAddress) external onlyOwner {
+    /// @param _editionId The edition id to set the signature address for
+    /// @param _newSignerAddress The address that will be used to sign purchases
+    function setSignerAddress(uint256 _editionId, address _newSignerAddress) external checkPermission(ADMIN_ROLE) {
         require(_newSignerAddress != address(0), 'Signer address cannot be 0');
 
         editions[_editionId].signerAddress = _newSignerAddress;
@@ -313,7 +331,12 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
     }
 
     /// @notice Sets the permissioned quantity for an edition
-    function setPermissionedQuantity(uint256 _editionId, uint32 _permissionedQuantity) external onlyOwner {
+    /// @param _editionId The edition id to set the permissioned quantity for
+    /// @param _permissionedQuantity The new permissiond quantity
+    function setPermissionedQuantity(uint256 _editionId, uint32 _permissionedQuantity)
+        external
+        checkPermission(ADMIN_ROLE)
+    {
         // Prevent setting to permissioned quantity when there is no signer address
         require(editions[_editionId].signerAddress != address(0), 'Edition must have a signer');
 
@@ -321,23 +344,53 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
         emit PermissionedQuantitySet(_editionId, _permissionedQuantity);
     }
 
+    /// @notice Sets a new owner, only callable by current owner or the soundRecoveryAddress (ie: gnosis safe)
+    /// @param _newOwner The new owner of the contract
+    function setOwnerOverride(address _newOwner) external {
+        require(_msgSender() == soundRecoveryAddress() || _msgSender() == owner(), 'unauthorized');
+
+        super._transferOwnership(_newOwner);
+    }
+
+    /// @notice Sets the base URI for an edition
+    /// @param _editionId The target edition's id
+    /// @param _baseURI The new base URI
+    function setEditionBaseURI(uint256 _editionId, string calldata _baseURI) external checkPermission(ADMIN_ROLE) {
+        require(
+            editions[_editionId].quantity > 0 || editions[_editionId].permissionedQuantity > 0,
+            'Nonexistent edition'
+        );
+
+        editions[_editionId].baseURI = _baseURI;
+
+        emit BaseURISet(_editionId, _baseURI);
+    }
+
     // ================================
     // VIEW FUNCTIONS
     // ================================
 
-    /// @notice Returns token URI (metadata URL). e.g. https://sound.xyz/api/metadata/[artistId]/[editionId]/[tokenId]
-    /// @dev Concatenate the baseURI, editionId and tokenId, to create URI.
+    /// @notice Returns token URI (metadata URL). e.g. https://sound.xyz/api/metadata/[contractAddress]/[tokenId]/metadata.json
+    /// @dev Concatenate the baseURI and tokenId, to create URI.
     function tokenURI(uint256 _tokenId) public view override returns (string memory) {
         require(_exists(_tokenId), 'ERC721Metadata: URI query for nonexistent token');
 
         uint256 editionId = tokenToEdition(_tokenId);
 
-        return string(abi.encodePacked(baseURI, editionId.toString(), '/', _tokenId.toString()));
+        string memory editionBaseURI = editions[editionId].baseURI;
+
+        // If the edition has a baseURI, it means this edition is on permastorage
+        // Using 3 as the length in case it gets accidentally set to empty space
+        if (bytes(editionBaseURI).length > 3) {
+            return string.concat(editionBaseURI, Strings.toString(_tokenId), '/metadata.json');
+        }
+
+        return string.concat(_contractBaseURI(), Strings.toString(_tokenId));
     }
 
-    /// @notice Returns contract URI used by Opensea. e.g. https://sound.xyz/api/metadata/[artistId]/storefront
+    /// @notice Returns contract URI used by Opensea. e.g. https://sound.xyz/api/metadata/[contractAddress]/storefront
     function contractURI() public view returns (string memory) {
-        return string(abi.encodePacked(baseURI, 'storefront'));
+        return string.concat(_contractBaseURI(), 'storefront');
     }
 
     /// @notice Get royalty information for token
@@ -371,6 +424,7 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
     }
 
     /// @notice Informs other contracts which interfaces this contract supports
+    /// @param _interfaceId The interface id to check
     /// @dev https://eips.ethereum.org/EIPS/eip-165
     function supportsInterface(bytes4 _interfaceId)
         public
@@ -412,6 +466,9 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
         return owners;
     }
 
+    /// @notice Returns the claimed ticket numbers for a given edition and list of ticket numbers (indexes)
+    /// @param _editionId Edition id
+    /// @param _ticketNumbers List of ticket numbers (indexes)
     function checkTicketNumbers(uint256 _editionId, uint256[] calldata _ticketNumbers)
         external
         view
@@ -425,6 +482,17 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
         }
 
         return claimed;
+    }
+
+    /// @notice Returns the address (ie: gnosis safe) authorized to change ownership of the contract
+    function soundRecoveryAddress() public view virtual returns (address) {
+        if (block.chainid == 1) {
+            return 0x858a92511485715Cfb754f397a7894b7724c7Abd;
+        } else if (block.chainid == 4) {
+            return 0xee35E946Dd73EF78d352454c3F915e2cA0a09d87;
+        } else {
+            revert('unsupported chain');
+        }
     }
 
     // ================================
@@ -444,6 +512,7 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
     /// @notice Gets signer address to validate permissioned purchase
     /// @param _signature signed message
     /// @param _editionId edition id
+    /// @param _ticketNumber ticket number to check
     /// @return address of signer
     /// @dev https://eips.ethereum.org/EIPS/eip-712
     function getSigner(
@@ -507,5 +576,14 @@ contract ArtistV4 is ERC721Upgradeable, IERC2981Upgradeable, OwnableUpgradeable 
         storedBit = (localGroup >> localGroupOffset) & uint256(1);
 
         return (storedBit, localGroup, localGroupOffset, ticketNumbersIdx);
+    }
+
+    function _contractBaseURI() private view returns (string memory) {
+        string memory contractAddress = Strings.toHexString(uint256(uint160(address(this))), 20);
+        if (block.chainid == 1) {
+            return string.concat('https://metadata.sound.xyz/v1/', contractAddress, '/');
+        } else {
+            return string.concat(baseURI, contractAddress, '/');
+        }
     }
 }
