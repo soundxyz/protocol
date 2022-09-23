@@ -1,3 +1,7 @@
+# DEPRECATED.
+
+## See https://github.com/soundxyz/sound-protocol for the lastest Sound Protocol
+
 # sound.xyz protocol
 
 Explanation of our design approach:
